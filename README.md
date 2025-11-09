@@ -204,6 +204,7 @@ The project maintains 100% code coverage with:
 
 - **Unit tests**: Test individual components with mocks
 - **Integration tests**: Test provider API interactions (with test credentials)
+- **Module tests**: End-to-end tests of the action using [act](https://nektosact.com/) (requires Docker and act to be installed)
 
 ```bash
 # Run all tests
@@ -214,6 +215,24 @@ poetry run pytest tests/unit/test_scanner_detector.py
 
 # Update snapshots
 make snapshot.update
+```
+
+### Module Test Requirements
+
+The end-to-end module tests require:
+- [act](https://nektosact.com/) - Run GitHub Actions locally
+- Docker - Required by act to run action containers
+
+Install act:
+```bash
+# macOS
+brew install act
+
+# Linux
+curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Windows
+choco install act-cli
 ```
 
 ## Security

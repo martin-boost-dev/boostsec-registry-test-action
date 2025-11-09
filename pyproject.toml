@@ -9,7 +9,6 @@ include = ["boostsec/registry_test_action/py.typed"]
 [tool.poetry.dependencies]
 ## Automatically generated dependencies. DO NOT edit between these lines. ##
 python = "^3.12"
-boostsec-common = {git = "git@github.com:boostsecurityio/boostsec-common.git", rev = "main"}
 ## Automatically generated dependencies. DO NOT edit between these lines. ##
 pydantic = "^2.12.4"
 pyyaml = "^6.0.3"
@@ -31,6 +30,8 @@ pytest-cov = "^4.1.0"
 ruff = "0.*"
 types-pyyaml = "^6.0.12.20250915"
 ## Automatically generated dependencies. DO NOT edit between these lines. ##
+wiremock = "^2.7.0"
+testcontainers = "^4.13.2"
 
 
 [tool.coverage.report]

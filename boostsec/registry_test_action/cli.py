@@ -87,14 +87,15 @@ def _create_provider(provider_type: str) -> PipelineProvider:
     provider_type = provider_type.lower()
 
     if provider_type == "github":
-        return GitHubProvider(
-            GitHubConfig(
-                token=os.environ["GITHUB_TOKEN"],
-                owner=os.environ["GITHUB_REPOSITORY_OWNER"],
-                repo=os.environ["GITHUB_REPOSITORY"].split("/")[1],
-                workflow_id=os.environ["WORKFLOW_ID"],
-            )
+        config = GitHubConfig(
+            token=os.environ["GITHUB_TOKEN"],
+            owner=os.environ["GITHUB_REPOSITORY_OWNER"],
+            repo=os.environ["GITHUB_REPOSITORY"].split("/")[1],
+            workflow_id=os.environ["WORKFLOW_ID"],
         )
+        if "GITHUB_API_URL" in os.environ:
+            config.base_url = os.environ["GITHUB_API_URL"]
+        return GitHubProvider(config)
     elif provider_type == "gitlab":
         return GitLabProvider(
             GitLabConfig(

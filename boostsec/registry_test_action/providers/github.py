@@ -19,7 +19,7 @@ class GitHubProvider(PipelineProvider):
     def __init__(self, config: GitHubConfig) -> None:
         """Initialize GitHub provider with configuration."""
         self.config = config
-        self.base_url = "https://api.github.com"
+        self.base_url = config.base_url
 
     async def dispatch_test(
         self, scanner_id: str, test: Test, registry_ref: str

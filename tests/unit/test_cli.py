@@ -169,6 +169,61 @@ def test_main_invalid_provider() -> None:
     assert "Unknown provider type" in result.output
 
 
+def test_main_github_custom_api_url() -> None:
+    """Main works with custom GitHub API URL."""
+    results = [
+        TestResult(
+            provider="github",
+            scanner="scanner1",
+            test_name="test1",
+            status="success",
+            duration=10.0,
+        )
+    ]
+
+    mock_orchestrator = AsyncMock()
+    mock_orchestrator.run_tests = AsyncMock(return_value=results)
+
+    with (
+        patch.dict(
+            "os.environ",
+            {
+                "GITHUB_TOKEN": "token",
+                "GITHUB_REPOSITORY_OWNER": "owner",
+                "GITHUB_REPOSITORY": "owner/repo",
+                "WORKFLOW_ID": "workflow.yml",
+                "GITHUB_API_URL": "http://localhost:8080",
+            },
+        ),
+        patch(
+            "boostsec.registry_test_action.cli.TestOrchestrator",
+            return_value=mock_orchestrator,
+        ),
+        patch(
+            "boostsec.registry_test_action.cli.GitHubProvider"
+        ) as mock_provider_class,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "--registry-path",
+                "/test/registry",
+                "--base-ref",
+                "main",
+                "--head-ref",
+                "feature",
+                "--provider",
+                "github",
+            ],
+        )
+
+        mock_provider_class.assert_called_once()
+        config = mock_provider_class.call_args[0][0]
+        assert config.base_url == "http://localhost:8080"
+
+    assert result.exit_code == 0
+
+
 def test_main_gitlab_provider() -> None:
     """Main works with GitLab provider."""
     results = [

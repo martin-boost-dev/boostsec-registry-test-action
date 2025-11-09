@@ -10,6 +10,9 @@ class GitHubConfig(BaseModel):
     owner: str = Field(..., description="Repository owner")
     repo: str = Field(..., description="Repository name")
     workflow_id: str = Field(..., description="Workflow file name or ID")
+    base_url: str = Field(
+        default="https://api.github.com", description="GitHub API base URL"
+    )
 
 
 class GitLabConfig(BaseModel):

@@ -99,7 +99,7 @@ runs:
       shell: bash
       run: |
         cd ${{ github.action_path }}
-        poetry install --no-dev
+        poetry install --only main
 
     - name: Run tests
       id: run-tests
