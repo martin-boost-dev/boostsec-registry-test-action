@@ -26,20 +26,18 @@ def test_main_success_with_results() -> None:
     mock_orchestrator = AsyncMock()
     mock_orchestrator.run_tests = AsyncMock(return_value=results)
 
-    with (
-        patch.dict(
-            "os.environ",
-            {
-                "GITHUB_TOKEN": "token",
-                "GITHUB_REPOSITORY_OWNER": "owner",
-                "GITHUB_REPOSITORY": "owner/repo",
-                "WORKFLOW_ID": "workflow.yml",
-            },
-        ),
-        patch(
-            "boostsec.registry_test_action.cli.TestOrchestrator",
-            return_value=mock_orchestrator,
-        ),
+    config_json = json.dumps(
+        {
+            "token": "token",
+            "owner": "owner",
+            "repo": "repo",
+            "workflow_id": "workflow.yml",
+        }
+    )
+
+    with patch(
+        "boostsec.registry_test_action.cli.TestOrchestrator",
+        return_value=mock_orchestrator,
     ):
         result = runner.invoke(
             app,
@@ -52,6 +50,8 @@ def test_main_success_with_results() -> None:
                 "feature",
                 "--provider",
                 "github",
+                "--provider-config",
+                config_json,
             ],
         )
 
@@ -77,20 +77,18 @@ def test_main_failure_with_failed_tests() -> None:
     mock_orchestrator = AsyncMock()
     mock_orchestrator.run_tests = AsyncMock(return_value=results)
 
-    with (
-        patch.dict(
-            "os.environ",
-            {
-                "GITHUB_TOKEN": "token",
-                "GITHUB_REPOSITORY_OWNER": "owner",
-                "GITHUB_REPOSITORY": "owner/repo",
-                "WORKFLOW_ID": "workflow.yml",
-            },
-        ),
-        patch(
-            "boostsec.registry_test_action.cli.TestOrchestrator",
-            return_value=mock_orchestrator,
-        ),
+    config_json = json.dumps(
+        {
+            "token": "token",
+            "owner": "owner",
+            "repo": "repo",
+            "workflow_id": "workflow.yml",
+        }
+    )
+
+    with patch(
+        "boostsec.registry_test_action.cli.TestOrchestrator",
+        return_value=mock_orchestrator,
     ):
         result = runner.invoke(
             app,
@@ -103,6 +101,8 @@ def test_main_failure_with_failed_tests() -> None:
                 "feature",
                 "--provider",
                 "github",
+                "--provider-config",
+                config_json,
             ],
         )
 
@@ -116,20 +116,18 @@ def test_main_no_tests_to_run() -> None:
     mock_orchestrator = AsyncMock()
     mock_orchestrator.run_tests = AsyncMock(return_value=[])
 
-    with (
-        patch.dict(
-            "os.environ",
-            {
-                "GITHUB_TOKEN": "token",
-                "GITHUB_REPOSITORY_OWNER": "owner",
-                "GITHUB_REPOSITORY": "owner/repo",
-                "WORKFLOW_ID": "workflow.yml",
-            },
-        ),
-        patch(
-            "boostsec.registry_test_action.cli.TestOrchestrator",
-            return_value=mock_orchestrator,
-        ),
+    config_json = json.dumps(
+        {
+            "token": "token",
+            "owner": "owner",
+            "repo": "repo",
+            "workflow_id": "workflow.yml",
+        }
+    )
+
+    with patch(
+        "boostsec.registry_test_action.cli.TestOrchestrator",
+        return_value=mock_orchestrator,
     ):
         result = runner.invoke(
             app,
@@ -142,6 +140,8 @@ def test_main_no_tests_to_run() -> None:
                 "feature",
                 "--provider",
                 "github",
+                "--provider-config",
+                config_json,
             ],
         )
 
@@ -151,6 +151,8 @@ def test_main_no_tests_to_run() -> None:
 
 def test_main_invalid_provider() -> None:
     """Main exits with error for invalid provider."""
+    config_json = json.dumps({"token": "token"})
+
     result = runner.invoke(
         app,
         [
@@ -162,6 +164,8 @@ def test_main_invalid_provider() -> None:
             "feature",
             "--provider",
             "invalid",
+            "--provider-config",
+            config_json,
         ],
     )
 
@@ -184,17 +188,17 @@ def test_main_github_custom_api_url() -> None:
     mock_orchestrator = AsyncMock()
     mock_orchestrator.run_tests = AsyncMock(return_value=results)
 
+    config_json = json.dumps(
+        {
+            "token": "token",
+            "owner": "owner",
+            "repo": "repo",
+            "workflow_id": "workflow.yml",
+        }
+    )
+
     with (
-        patch.dict(
-            "os.environ",
-            {
-                "GITHUB_TOKEN": "token",
-                "GITHUB_REPOSITORY_OWNER": "owner",
-                "GITHUB_REPOSITORY": "owner/repo",
-                "WORKFLOW_ID": "workflow.yml",
-                "GITHUB_API_URL": "http://localhost:8080",
-            },
-        ),
+        patch.dict("os.environ", {"GITHUB_API_URL": "http://localhost:8080"}),
         patch(
             "boostsec.registry_test_action.cli.TestOrchestrator",
             return_value=mock_orchestrator,
@@ -214,6 +218,8 @@ def test_main_github_custom_api_url() -> None:
                 "feature",
                 "--provider",
                 "github",
+                "--provider-config",
+                config_json,
             ],
         )
 
@@ -239,18 +245,16 @@ def test_main_gitlab_provider() -> None:
     mock_orchestrator = AsyncMock()
     mock_orchestrator.run_tests = AsyncMock(return_value=results)
 
-    with (
-        patch.dict(
-            "os.environ",
-            {
-                "GITLAB_TOKEN": "token",
-                "GITLAB_PROJECT_ID": "12345",
-            },
-        ),
-        patch(
-            "boostsec.registry_test_action.cli.TestOrchestrator",
-            return_value=mock_orchestrator,
-        ),
+    config_json = json.dumps(
+        {
+            "token": "token",
+            "project_id": "12345",
+        }
+    )
+
+    with patch(
+        "boostsec.registry_test_action.cli.TestOrchestrator",
+        return_value=mock_orchestrator,
     ):
         result = runner.invoke(
             app,
@@ -263,6 +267,8 @@ def test_main_gitlab_provider() -> None:
                 "feature",
                 "--provider",
                 "gitlab",
+                "--provider-config",
+                config_json,
             ],
         )
 
@@ -284,20 +290,18 @@ def test_main_azure_provider() -> None:
     mock_orchestrator = AsyncMock()
     mock_orchestrator.run_tests = AsyncMock(return_value=results)
 
-    with (
-        patch.dict(
-            "os.environ",
-            {
-                "AZURE_DEVOPS_TOKEN": "token",
-                "AZURE_DEVOPS_ORGANIZATION": "org",
-                "AZURE_DEVOPS_PROJECT": "project",
-                "AZURE_DEVOPS_PIPELINE_ID": "123",
-            },
-        ),
-        patch(
-            "boostsec.registry_test_action.cli.TestOrchestrator",
-            return_value=mock_orchestrator,
-        ),
+    config_json = json.dumps(
+        {
+            "token": "token",
+            "organization": "org",
+            "project": "project",
+            "pipeline_id": 123,
+        }
+    )
+
+    with patch(
+        "boostsec.registry_test_action.cli.TestOrchestrator",
+        return_value=mock_orchestrator,
     ):
         result = runner.invoke(
             app,
@@ -310,6 +314,8 @@ def test_main_azure_provider() -> None:
                 "feature",
                 "--provider",
                 "azure",
+                "--provider-config",
+                config_json,
             ],
         )
 
@@ -331,20 +337,18 @@ def test_main_bitbucket_provider() -> None:
     mock_orchestrator = AsyncMock()
     mock_orchestrator.run_tests = AsyncMock(return_value=results)
 
-    with (
-        patch.dict(
-            "os.environ",
-            {
-                "BITBUCKET_USERNAME": "user",
-                "BITBUCKET_APP_PASSWORD": "pass",
-                "BITBUCKET_WORKSPACE": "workspace",
-                "BITBUCKET_REPO_SLUG": "repo",
-            },
-        ),
-        patch(
-            "boostsec.registry_test_action.cli.TestOrchestrator",
-            return_value=mock_orchestrator,
-        ),
+    config_json = json.dumps(
+        {
+            "username": "user",
+            "app_password": "pass",
+            "workspace": "workspace",
+            "repo_slug": "repo",
+        }
+    )
+
+    with patch(
+        "boostsec.registry_test_action.cli.TestOrchestrator",
+        return_value=mock_orchestrator,
     ):
         result = runner.invoke(
             app,
@@ -357,6 +361,8 @@ def test_main_bitbucket_provider() -> None:
                 "feature",
                 "--provider",
                 "bitbucket",
+                "--provider-config",
+                config_json,
             ],
         )
 
@@ -368,20 +374,18 @@ def test_main_orchestrator_exception() -> None:
     mock_orchestrator = AsyncMock()
     mock_orchestrator.run_tests = AsyncMock(side_effect=RuntimeError("API Error"))
 
-    with (
-        patch.dict(
-            "os.environ",
-            {
-                "GITHUB_TOKEN": "token",
-                "GITHUB_REPOSITORY_OWNER": "owner",
-                "GITHUB_REPOSITORY": "owner/repo",
-                "WORKFLOW_ID": "workflow.yml",
-            },
-        ),
-        patch(
-            "boostsec.registry_test_action.cli.TestOrchestrator",
-            return_value=mock_orchestrator,
-        ),
+    config_json = json.dumps(
+        {
+            "token": "token",
+            "owner": "owner",
+            "repo": "repo",
+            "workflow_id": "workflow.yml",
+        }
+    )
+
+    with patch(
+        "boostsec.registry_test_action.cli.TestOrchestrator",
+        return_value=mock_orchestrator,
     ):
         result = runner.invoke(
             app,
@@ -394,6 +398,8 @@ def test_main_orchestrator_exception() -> None:
                 "feature",
                 "--provider",
                 "github",
+                "--provider-config",
+                config_json,
             ],
         )
 
@@ -437,20 +443,18 @@ def test_main_mixed_results() -> None:
     mock_orchestrator = AsyncMock()
     mock_orchestrator.run_tests = AsyncMock(return_value=results)
 
-    with (
-        patch.dict(
-            "os.environ",
-            {
-                "GITHUB_TOKEN": "token",
-                "GITHUB_REPOSITORY_OWNER": "owner",
-                "GITHUB_REPOSITORY": "owner/repo",
-                "WORKFLOW_ID": "workflow.yml",
-            },
-        ),
-        patch(
-            "boostsec.registry_test_action.cli.TestOrchestrator",
-            return_value=mock_orchestrator,
-        ),
+    config_json = json.dumps(
+        {
+            "token": "token",
+            "owner": "owner",
+            "repo": "repo",
+            "workflow_id": "workflow.yml",
+        }
+    )
+
+    with patch(
+        "boostsec.registry_test_action.cli.TestOrchestrator",
+        return_value=mock_orchestrator,
     ):
         result = runner.invoke(
             app,
@@ -463,6 +467,8 @@ def test_main_mixed_results() -> None:
                 "feature",
                 "--provider",
                 "github",
+                "--provider-config",
+                config_json,
             ],
         )
 
@@ -473,3 +479,25 @@ def test_main_mixed_results() -> None:
     assert output["failed"] == 1
     assert output["errors"] == 1
     assert output["timeouts"] == 1
+
+
+def test_main_invalid_json_config() -> None:
+    """Main exits with error when provider-config is invalid JSON."""
+    result = runner.invoke(
+        app,
+        [
+            "--registry-path",
+            "/test/registry",
+            "--base-ref",
+            "main",
+            "--head-ref",
+            "feature",
+            "--provider",
+            "github",
+            "--provider-config",
+            "not-valid-json",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "Invalid JSON in provider-config" in result.output

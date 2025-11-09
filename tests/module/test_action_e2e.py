@@ -158,7 +158,8 @@ def test_workflow(tmp_path_factory: Any) -> Any:
     workflows_dir.mkdir(parents=True)
 
     workflow_file = workflows_dir / "test.yml"
-    workflow_file.write_text("""
+    workflow_file.write_text(
+        """
 name: Test Action
 on: push
 
@@ -172,14 +173,14 @@ jobs:
         uses: ./
         with:
           provider: github
+          provider-config: >
+            {"token": "test-token", "owner": "test-owner",
+             "repo": "test-repo", "workflow_id": "test.yml"}
           registry-path: .
           base-ref: main
           head-ref: feature
-          github-token: test-token
-          github-owner: test-owner
-          github-repo: test-repo
-          github-workflow-id: test.yml
-""")
+"""
+    )
 
     return workflows_dir.parent
 

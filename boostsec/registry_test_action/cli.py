@@ -31,12 +31,15 @@ def main(
     provider: str = typer.Option(
         ..., help="Provider type (github, gitlab, azure, bitbucket)"
     ),
+    provider_config: str = typer.Option(
+        ..., help="JSON configuration for the provider"
+    ),
 ) -> None:
     """Run scanner tests on a CI/CD provider."""
     registry_ref = head_ref
 
     try:
-        pipeline_provider = _create_provider(provider)
+        pipeline_provider = _create_provider(provider, provider_config)
     except ValueError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
@@ -82,46 +85,26 @@ def main(
         raise typer.Exit(code=1)
 
 
-def _create_provider(provider_type: str) -> PipelineProvider:
-    """Create provider based on type and environment variables."""
+def _create_provider(provider_type: str, config_json: str) -> PipelineProvider:
+    """Create provider based on type and JSON configuration."""
     provider_type = provider_type.lower()
 
+    try:
+        config_dict = json.loads(config_json)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in provider-config: {e}")
+
     if provider_type == "github":
-        config = GitHubConfig(
-            token=os.environ["GITHUB_TOKEN"],
-            owner=os.environ["GITHUB_REPOSITORY_OWNER"],
-            repo=os.environ["GITHUB_REPOSITORY"].split("/")[1],
-            workflow_id=os.environ["WORKFLOW_ID"],
-        )
+        config = GitHubConfig(**config_dict)
         if "GITHUB_API_URL" in os.environ:
             config.base_url = os.environ["GITHUB_API_URL"]
         return GitHubProvider(config)
     elif provider_type == "gitlab":
-        return GitLabProvider(
-            GitLabConfig(
-                token=os.environ["GITLAB_TOKEN"],
-                project_id=os.environ["GITLAB_PROJECT_ID"],
-                ref=os.environ.get("GITLAB_REF", "main"),
-            )
-        )
+        return GitLabProvider(GitLabConfig(**config_dict))
     elif provider_type == "azure":
-        return AzureDevOpsProvider(
-            AzureDevOpsConfig(
-                token=os.environ["AZURE_DEVOPS_TOKEN"],
-                organization=os.environ["AZURE_DEVOPS_ORGANIZATION"],
-                project=os.environ["AZURE_DEVOPS_PROJECT"],
-                pipeline_id=int(os.environ["AZURE_DEVOPS_PIPELINE_ID"]),
-            )
-        )
+        return AzureDevOpsProvider(AzureDevOpsConfig(**config_dict))
     elif provider_type == "bitbucket":
-        return BitbucketProvider(
-            BitbucketConfig(
-                username=os.environ["BITBUCKET_USERNAME"],
-                app_password=os.environ["BITBUCKET_APP_PASSWORD"],
-                workspace=os.environ["BITBUCKET_WORKSPACE"],
-                repo_slug=os.environ["BITBUCKET_REPO_SLUG"],
-            )
-        )
+        return BitbucketProvider(BitbucketConfig(**config_dict))
     else:
         raise ValueError(
             f"Unknown provider type: {provider_type}. "

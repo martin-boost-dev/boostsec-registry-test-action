@@ -73,29 +73,79 @@ All providers use `aiohttp` for async HTTP operations.
 
 ## Configuration
 
-The action expects repository secrets for authentication:
+The action uses a JSON configuration string for provider-specific settings. Each provider requires different authentication tokens and configuration parameters stored as repository secrets.
 
-| Provider | Secret Name | Type | Permissions |
-|----------|-------------|------|-------------|
-| GitHub | `GITHUB_TOKEN` | Auto-generated | `actions: write, contents: read` |
-| GitLab | `GITLAB_TOKEN` | Personal Access Token | `api, write_repository` |
-| Azure | `AZURE_PAT` | Personal Access Token | `Code (R&W), Build (R&E)` |
-| Bitbucket | `BITBUCKET_APP_PASSWORD` | App Password | `repository:write, pipeline:write` |
+### Provider Configuration Schemas
 
-Additionally, each provider requires repository configuration:
+#### GitHub Actions
+```json
+{
+  "token": "your-github-token",
+  "owner": "repository-owner",
+  "repo": "repository-name",
+  "workflow_id": "workflow.yml"
+}
+```
 
-| Provider | Config Secret | Description |
-|----------|---------------|-------------|
-| GitLab | `GITLAB_PROJECT_ID` | Project ID for the runner repository |
-| Azure | `AZURE_ORG` | Azure DevOps organization |
-| Azure | `AZURE_PROJECT` | Azure DevOps project name |
-| Azure | `AZURE_PIPELINE_ID` | Pipeline/Build definition ID |
-| Bitbucket | `BITBUCKET_WORKSPACE` | Bitbucket workspace slug |
-| Bitbucket | `BITBUCKET_REPO_SLUG` | Repository slug for the runner |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `token` | string | Yes | GitHub personal access token or `GITHUB_TOKEN` with `actions: write, contents: read` |
+| `owner` | string | Yes | Repository owner (organization or user) |
+| `repo` | string | Yes | Repository name |
+| `workflow_id` | string | Yes | Workflow file name or ID to dispatch |
+
+#### GitLab CI
+```json
+{
+  "token": "your-gitlab-token",
+  "project_id": "12345"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `token` | string | Yes | GitLab Personal Access Token with `api, write_repository` scopes |
+| `project_id` | string | Yes | GitLab project ID for the runner repository |
+
+#### Azure DevOps
+```json
+{
+  "token": "your-azure-pat",
+  "organization": "your-org",
+  "project": "your-project",
+  "pipeline_id": 123
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `token` | string | Yes | Azure Personal Access Token with `Code (R&W), Build (R&E)` permissions |
+| `organization` | string | Yes | Azure DevOps organization name |
+| `project` | string | Yes | Azure DevOps project name |
+| `pipeline_id` | integer | Yes | Pipeline/Build definition ID |
+
+#### Bitbucket Pipelines
+```json
+{
+  "username": "your-username",
+  "app_password": "your-app-password",
+  "workspace": "your-workspace",
+  "repo_slug": "repository-slug"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `username` | string | Yes | Bitbucket username |
+| `app_password` | string | Yes | Bitbucket App Password with `repository:write, pipeline:write` permissions |
+| `workspace` | string | Yes | Bitbucket workspace slug |
+| `repo_slug` | string | Yes | Repository slug for the runner |
 
 ## Usage
 
-Add this action to your scanner-registry workflow:
+Add this action to your scanner-registry workflow. The action supports testing on multiple CI/CD providers by specifying the provider type and configuration as JSON.
+
+### GitHub Actions Example
 
 ```yaml
 name: Test Scanner Updates
@@ -115,17 +165,71 @@ jobs:
 
       - uses: boostsecurityio/registry-test-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          gitlab-token: ${{ secrets.GITLAB_TOKEN }}
-          gitlab-project-id: ${{ secrets.GITLAB_PROJECT_ID }}
-          azure-pat: ${{ secrets.AZURE_PAT }}
-          azure-org: ${{ secrets.AZURE_ORG }}
-          azure-project: ${{ secrets.AZURE_PROJECT }}
-          azure-pipeline-id: ${{ secrets.AZURE_PIPELINE_ID }}
-          bitbucket-username: ${{ secrets.BITBUCKET_USERNAME }}
-          bitbucket-app-password: ${{ secrets.BITBUCKET_APP_PASSWORD }}
-          bitbucket-workspace: ${{ secrets.BITBUCKET_WORKSPACE }}
-          bitbucket-repo-slug: ${{ secrets.BITBUCKET_REPO_SLUG }}
+          provider: github
+          provider-config: |
+            {
+              "token": "${{ secrets.GITHUB_TOKEN }}",
+              "owner": "${{ github.repository_owner }}",
+              "repo": "scanner-test-runner",
+              "workflow_id": "test-scanner.yml"
+            }
+```
+
+### GitLab CI Example
+
+```yaml
+- uses: boostsecurityio/registry-test-action@v1
+  with:
+    provider: gitlab
+    provider-config: |
+      {
+        "token": "${{ secrets.GITLAB_TOKEN }}",
+        "project_id": "${{ secrets.GITLAB_PROJECT_ID }}"
+      }
+```
+
+### Azure DevOps Example
+
+```yaml
+- uses: boostsecurityio/registry-test-action@v1
+  with:
+    provider: azure
+    provider-config: |
+      {
+        "token": "${{ secrets.AZURE_PAT }}",
+        "organization": "${{ secrets.AZURE_ORG }}",
+        "project": "${{ secrets.AZURE_PROJECT }}",
+        "pipeline_id": ${{ secrets.AZURE_PIPELINE_ID }}
+      }
+```
+
+### Bitbucket Pipelines Example
+
+```yaml
+- uses: boostsecurityio/registry-test-action@v1
+  with:
+    provider: bitbucket
+    provider-config: |
+      {
+        "username": "${{ secrets.BITBUCKET_USERNAME }}",
+        "app_password": "${{ secrets.BITBUCKET_APP_PASSWORD }}",
+        "workspace": "${{ secrets.BITBUCKET_WORKSPACE }}",
+        "repo_slug": "${{ secrets.BITBUCKET_REPO_SLUG }}"
+      }
+```
+
+### Optional Parameters
+
+All examples above can include these optional parameters:
+
+```yaml
+- uses: boostsecurityio/registry-test-action@v1
+  with:
+    provider: github
+    provider-config: '{ ... }'
+    registry-path: '.'           # Path to scanner registry (default: '.')
+    base-ref: 'main'             # Base git reference (default: 'main')
+    head-ref: ${{ github.head_ref }}  # Head git reference (required)
 ```
 
 ## Development
