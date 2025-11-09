@@ -11,6 +11,9 @@ include = ["boostsec/registry_test_action/py.typed"]
 python = "^3.12"
 boostsec-common = {git = "git@github.com:boostsecurityio/boostsec-common.git", rev = "main"}
 ## Automatically generated dependencies. DO NOT edit between these lines. ##
+pydantic = "^2.12.4"
+pyyaml = "^6.0.3"
+aiohttp = "^3.13.2"
 
 [tool.poetry.extras]
 testing = [
@@ -117,6 +120,7 @@ classmethod-decorators = [
 "tests/*" = [
     "S101",  # Use of `assert` detected
     "S105",  # Possible hardcoded password
+    "S106",  # Possible hardcoded password assigned to argument
     "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
 ]
 
