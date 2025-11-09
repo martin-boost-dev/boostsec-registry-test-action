@@ -1,0 +1,18 @@
+{
+  "template": "git@github.com:boostsecurityio/boostsec-project-template.git",
+  "commit": "2e3e8e09c58236bda40413b53e8b1bdeb76bdae6",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_slug": "boostsec-registry-test-action",
+      "project_description": "Run test when a change is applied to the scanner-registry",
+      "namespace": "boostsec",
+      "module": "registry_test_action",
+      "use_argocd": "n",
+      "use_docker": "n",
+      "_template": "git@github.com:boostsecurityio/boostsec-project-template.git",
+      "_commit": "2e3e8e09c58236bda40413b53e8b1bdeb76bdae6"
+    }
+  },
+  "directory": null
+}

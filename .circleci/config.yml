@@ -1,0 +1,63 @@
+defaults:
+  slack: &defaults_slack
+    branch_pattern: main
+    channel: dev-circleci
+    custom: |
+      {"blocks":[{"type":"header","text":{"type":"plain_text","text":":scream: $CIRCLE_PROJECT_REPONAME","emoji":true}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Branch*: $CIRCLE_BRANCH"},{"type":"mrkdwn","text":"*Job*: ${CIRCLE_JOB}"},{"type":"mrkdwn","text":"*Author*: $CIRCLE_USERNAME"}]},{"type":"actions","elements":[{"type":"button","action_id":"basic_fail_view","text":{"type":"plain_text","text":"View Job"},"url":"${CIRCLE_BUILD_URL}"}]}]}
+    event: fail
+    template: ""
+
+version: 2.1
+
+executors:
+  default:
+    environment:
+      BUILDKIT_PROGRESS: plain
+      DOCKER_BUILDKIT: 1
+
+    machine:
+      docker_layer_caching: true
+      image: ubuntu-2204:2024.04.1
+
+orbs:
+  argocd: boostsecurityio/argocd-release@1
+  boost-security-scanner: boostsecurityio/scanner@4
+  github-util: boostsecurityio/github-util@1
+  slack: circleci/slack@5
+
+workflows:
+  version: 2
+  ci:
+    jobs:
+      - test:
+          context: [aws-build-read, slack-bot]
+
+jobs:
+  test:
+    executor: default
+    steps:
+      - github-util/setup:
+          aws-role-arn: AWS_ECR_ROLE_ARN
+      - checkout
+      - restore_cache:
+          keys:
+            - venv-0-{{ .Branch }}-{{ checksum "poetry.lock" }}
+            - venv-0-{{ .Branch }}-
+            - venv-0-main-
+      - run:
+          name: install poetry
+          command: pip3 install "poetry<2.0.0"
+      - run:
+          command: make install
+      - run:
+          command: make lint
+      - run:
+          command: make test
+      - slack/notify:
+          <<: *defaults_slack
+      - save_cache:
+          # cache key:
+          #  - venv-CACHE_BUST_INT-BRANCH_NAME-POETRY_CHECKSUM
+          key: venv-0-{{ .Branch }}-{{ checksum "poetry.lock" }}
+          paths:
+            - /home/circleci/.cache/pypoetry/virtualenvs

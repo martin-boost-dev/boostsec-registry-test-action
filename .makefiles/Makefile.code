@@ -1,0 +1,60 @@
+#
+# Targets
+#
+install:  ## Install repository dependencies
+install: .phony
+	# https://github.com/python-poetry/poetry/issues/7184
+	poetry install --no-ansi --sync --extras testing
+
+update:  ## Update the lock file and virtualenv
+update: poetry.lock install
+
+upgrade:  ## Update repository dependencies
+upgrade: cruft.update update
+
+format:  ## Run code formatters
+format: .phony
+	poetry run ruff format .
+	poetry run ruff check --fix-only .
+
+lint:  ## Run linters
+lint: .phony
+	@echo "Checking if poetry.lock is up-to-date with pyproject.toml"
+	@poetry check --lock
+	@echo "Checking for poetry.lock version."
+	@if ! grep 'lock-version = "2.0"' poetry.lock >/dev/null 2>&1; then \
+	    printf "\e[31mpoetry.lock is using an outdated lock-version. Ensure you have the latest poetry version.\e[0m\n"; \
+		exit 1; \
+	fi
+	@echo "Checking for .rej files."
+	@if [ `git ls-files '*.rej' | wc -l` -gt 0 ]; then \
+		printf "\e[31m.rej files found\e[0m\n"; \
+		exit 1; \
+	fi
+	poetry run mypy .
+	poetry run ruff format --check .
+	poetry run ruff check .
+
+test: ## Run pytest
+test: .phony
+	[ ! -e .coverage ] || rm .coverage
+	# https://pytest-cov.readthedocs.io/en/latest/plugins.html
+	COV_CORE_SOURCE=boostsec.registry_test_action \
+	COV_CORE_CONFIG=.coveragerc \
+	COV_CORE_DATAFILE=.coverage.eager \
+	poetry run pytest \
+		--cov --cov-append --cov-report term-missing --cov-fail-under=100 \
+		--verbosity=1
+
+snapshot.update: ## Run update the snapshots
+snapshot.update: .phony
+	poetry run pytest --snapshot-update -m snapshot
+
+#
+# Private targets
+#
+poetry.lock: .phony
+	poetry update --lock
+
+cruft.update: .phony
+	cruft update
