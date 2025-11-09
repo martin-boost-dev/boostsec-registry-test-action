@@ -14,6 +14,7 @@ boostsec-common = {git = "git@github.com:boostsecurityio/boostsec-common.git", r
 pydantic = "^2.12.4"
 pyyaml = "^6.0.3"
 aiohttp = "^3.13.2"
+typer = "^0.20.0"
 
 [tool.poetry.extras]
 testing = [

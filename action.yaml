@@ -1,0 +1,130 @@
+name: 'Scanner Registry Test Action'
+description: 'Run scanner tests when changes are made to the scanner registry'
+author: 'BoostSecurity'
+
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+
+inputs:
+  provider:
+    description: 'CI/CD provider to use (github, gitlab, azure, bitbucket)'
+    required: true
+  registry-path:
+    description: 'Path to scanner registry repository'
+    required: true
+    default: '.'
+  base-ref:
+    description: 'Base git reference to compare against'
+    required: true
+    default: 'main'
+  head-ref:
+    description: 'Head git reference (current branch)'
+    required: true
+
+  # GitHub provider configuration
+  github-token:
+    description: 'GitHub token for API access (required if provider=github)'
+    required: false
+  github-owner:
+    description: 'GitHub repository owner (required if provider=github)'
+    required: false
+  github-repo:
+    description: 'GitHub repository name (required if provider=github)'
+    required: false
+  github-workflow-id:
+    description: 'GitHub workflow ID to trigger (required if provider=github)'
+    required: false
+
+  # GitLab provider configuration
+  gitlab-token:
+    description: 'GitLab token for API access (required if provider=gitlab)'
+    required: false
+  gitlab-project-id:
+    description: 'GitLab project ID (required if provider=gitlab)'
+    required: false
+  gitlab-ref:
+    description: 'GitLab ref to run pipeline on (default: main)'
+    required: false
+    default: 'main'
+
+  # Azure DevOps provider configuration
+  azure-token:
+    description: 'Azure DevOps token for API access (required if provider=azure)'
+    required: false
+  azure-organization:
+    description: 'Azure DevOps organization (required if provider=azure)'
+    required: false
+  azure-project:
+    description: 'Azure DevOps project (required if provider=azure)'
+    required: false
+  azure-pipeline-id:
+    description: 'Azure DevOps pipeline ID (required if provider=azure)'
+    required: false
+
+  # Bitbucket provider configuration
+  bitbucket-username:
+    description: 'Bitbucket username (required if provider=bitbucket)'
+    required: false
+  bitbucket-app-password:
+    description: 'Bitbucket app password (required if provider=bitbucket)'
+    required: false
+  bitbucket-workspace:
+    description: 'Bitbucket workspace slug (required if provider=bitbucket)'
+    required: false
+  bitbucket-repo-slug:
+    description: 'Bitbucket repository slug (required if provider=bitbucket)'
+    required: false
+
+outputs:
+  results:
+    description: 'JSON-formatted test results'
+    value: ${{ steps.run-tests.outputs.results }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Poetry
+      shell: bash
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        poetry install --no-dev
+
+    - name: Run tests
+      id: run-tests
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GITHUB_REPOSITORY_OWNER: ${{ inputs.github-owner }}
+        GITHUB_REPOSITORY: ${{ inputs.github-owner }}/${{ inputs.github-repo }}
+        WORKFLOW_ID: ${{ inputs.github-workflow-id }}
+        GITLAB_TOKEN: ${{ inputs.gitlab-token }}
+        GITLAB_PROJECT_ID: ${{ inputs.gitlab-project-id }}
+        GITLAB_REF: ${{ inputs.gitlab-ref }}
+        AZURE_DEVOPS_TOKEN: ${{ inputs.azure-token }}
+        AZURE_DEVOPS_ORGANIZATION: ${{ inputs.azure-organization }}
+        AZURE_DEVOPS_PROJECT: ${{ inputs.azure-project }}
+        AZURE_DEVOPS_PIPELINE_ID: ${{ inputs.azure-pipeline-id }}
+        BITBUCKET_USERNAME: ${{ inputs.bitbucket-username }}
+        BITBUCKET_APP_PASSWORD: ${{ inputs.bitbucket-app-password }}
+        BITBUCKET_WORKSPACE: ${{ inputs.bitbucket-workspace }}
+        BITBUCKET_REPO_SLUG: ${{ inputs.bitbucket-repo-slug }}
+      run: |
+        cd ${{ github.action_path }}
+        RESULTS=$(poetry run python -m boostsec.registry_test_action.cli \
+          --registry-path "${{ inputs.registry-path }}" \
+          --base-ref "${{ inputs.base-ref }}" \
+          --head-ref "${{ inputs.head-ref }}" \
+          --provider "${{ inputs.provider }}")
+        echo "results=$RESULTS" >> $GITHUB_OUTPUT
