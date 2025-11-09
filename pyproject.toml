@@ -21,6 +21,7 @@ testing = [
 
 [tool.poetry.group.dev.dependencies]
 ## Automatically generated dependencies. DO NOT edit between these lines. ##
+aioresponses = "^0.7.8"
 boostsec-common = {git = "git@github.com:boostsecurityio/boostsec-common.git", rev = "main", extras = ["testing"]}
 coverage = "^7.3.3"
 mypy = "^1.11.0"
