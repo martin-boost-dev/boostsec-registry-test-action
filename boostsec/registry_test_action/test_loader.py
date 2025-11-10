@@ -56,20 +56,18 @@ async def load_all_tests(
 
     Returns:
         Dictionary mapping scanner IDs to their test definitions
-        Scanners with missing or invalid tests are excluded
+
+    Raises:
+        FileNotFoundError: If a test file is missing
+        ValueError: If a test file is invalid
 
     """
     results: dict[str, TestDefinition] = {}
 
     for scanner_id in scanner_ids:
-        try:
-            logger.info(f"Loading test definition for scanner: {scanner_id}")
-            definition = await load_test_definition(registry_path, scanner_id)
-            logger.info(f"Successfully loaded test definition for {scanner_id}")
-            results[scanner_id] = definition
-        except FileNotFoundError as e:
-            logger.warning(f"Skipping {scanner_id}: {e}")
-        except ValueError as e:
-            logger.error(f"Failed to load test definition for {scanner_id}: {e}")
+        logger.info(f"Loading test definition for scanner: {scanner_id}")
+        definition = await load_test_definition(registry_path, scanner_id)
+        logger.info(f"Successfully loaded test definition for {scanner_id}")
+        results[scanner_id] = definition
 
     return results

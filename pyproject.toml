@@ -35,7 +35,7 @@ pytest-asyncio = "<0.22"
 
 
 [tool.coverage.report]
-omit = ["alembic/*"]
+omit = ["alembic/*", "tests/module/test_action_e2e.py"]
 exclude_lines = [
     "#\\s*(pragma|PRAGMA)[:\\s]?\\s*(no|NO)\\s*(cover|COVER)",
     "if TYPE_CHECKING:",

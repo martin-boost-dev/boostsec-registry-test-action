@@ -186,8 +186,8 @@ tests:
     assert results["org/scanner2"].tests[0].name == "test2"
 
 
-async def test_load_all_tests_skips_missing(tmp_path: Path) -> None:
-    """load_all_tests skips scanners with missing test files."""
+async def test_load_all_tests_fails_on_missing(tmp_path: Path) -> None:
+    """load_all_tests fails when a scanner has missing test file."""
     scanner_dir = tmp_path / "scanners" / "org" / "scanner1"
     scanner_dir.mkdir(parents=True)
 
@@ -203,18 +203,12 @@ tests:
 """
     )
 
-    results = await load_all_tests(
-        tmp_path, ["org/scanner1", "org/scanner2", "org/scanner3"]
-    )
-
-    assert len(results) == 1
-    assert "org/scanner1" in results
-    assert "org/scanner2" not in results
-    assert "org/scanner3" not in results
+    with pytest.raises(FileNotFoundError, match="Test file not found"):
+        await load_all_tests(tmp_path, ["org/scanner1", "org/scanner2"])
 
 
-async def test_load_all_tests_skips_invalid(tmp_path: Path) -> None:
-    """load_all_tests skips scanners with invalid YAML."""
+async def test_load_all_tests_fails_on_invalid(tmp_path: Path) -> None:
+    """load_all_tests fails when a scanner has invalid YAML."""
     scanner1_dir = tmp_path / "scanners" / "org" / "scanner1"
     scanner2_dir = tmp_path / "scanners" / "org" / "scanner2"
     scanner1_dir.mkdir(parents=True)
@@ -234,11 +228,8 @@ tests:
 
     (scanner2_dir / "tests.yaml").write_text("invalid: yaml: [")
 
-    results = await load_all_tests(tmp_path, ["org/scanner1", "org/scanner2"])
-
-    assert len(results) == 1
-    assert "org/scanner1" in results
-    assert "org/scanner2" not in results
+    with pytest.raises(ValueError, match="Invalid YAML"):
+        await load_all_tests(tmp_path, ["org/scanner1", "org/scanner2"])
 
 
 async def test_load_all_tests_empty_list(tmp_path: Path) -> None:
