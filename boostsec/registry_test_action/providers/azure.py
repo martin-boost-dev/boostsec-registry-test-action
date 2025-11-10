@@ -1,5 +1,6 @@
 """Azure DevOps Pipelines provider implementation."""
 
+import json
 from collections.abc import Mapping
 from typing import Literal
 
@@ -32,15 +33,22 @@ class AzureDevOpsProvider(PipelineProvider):
                 "Authorization": f"Basic {self.config.token}",
                 "Content-Type": "application/json",
             }
+            template_params = {
+                "SCANNER_ID": scanner_id,
+                "TEST_NAME": test.name,
+                "TEST_TYPE": test.type,
+                "SOURCE_URL": test.source.url,
+                "SOURCE_REF": test.source.ref,
+                "REGISTRY_REF": registry_ref,
+                "SCAN_PATHS": json.dumps(test.scan_paths),
+                "TIMEOUT": test.timeout,
+            }
+
+            if test.scan_configs is not None:
+                template_params["SCAN_CONFIGS"] = json.dumps(test.scan_configs)
+
             payload = {
-                "templateParameters": {
-                    "SCANNER_ID": scanner_id,
-                    "TEST_NAME": test.name,
-                    "TEST_TYPE": test.type,
-                    "SOURCE_URL": test.source.url,
-                    "SOURCE_REF": test.source.ref,
-                    "REGISTRY_REF": registry_ref,
-                }
+                "templateParameters": template_params,
             }
 
             async with session.post(url, headers=headers, json=payload) as response:

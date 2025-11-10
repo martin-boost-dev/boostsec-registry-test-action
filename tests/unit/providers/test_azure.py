@@ -60,6 +60,42 @@ async def test_dispatch_test_success(
     assert run_id == "999"
 
 
+async def test_dispatch_test_with_scan_configs(azure_config: AzureDevOpsConfig) -> None:
+    """dispatch_test includes scan_configs when provided."""
+    test_with_configs = Test(
+        name="config test",
+        type="source-code",
+        source=TestSource(
+            url="https://github.com/OWASP/NodeGoat.git",
+            ref="main",
+        ),
+        scan_paths=["."],
+        scan_configs=[{"key": "value"}],
+    )
+
+    provider = AzureDevOpsProvider(azure_config)
+
+    with aioresponses() as m:
+        m.post(
+            f"https://dev.azure.com/{azure_config.organization}/"
+            f"{azure_config.project}/_apis/pipelines/{azure_config.pipeline_id}/"
+            "runs?api-version=7.1",
+            status=200,
+            payload={
+                "id": 999,
+                "_links": {
+                    "web": {"href": "https://dev.azure.com/test-org/pipelines/999"}
+                },
+            },
+        )
+
+        run_id = await provider.dispatch_test(
+            "boostsecurityio/trivy-fs", test_with_configs, "main"
+        )
+
+    assert run_id == "999"
+
+
 async def test_dispatch_test_failure(
     azure_config: AzureDevOpsConfig, test_definition: Test
 ) -> None:

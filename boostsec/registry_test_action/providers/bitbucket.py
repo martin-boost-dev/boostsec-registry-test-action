@@ -1,6 +1,7 @@
 """Bitbucket Pipelines provider implementation."""
 
 import base64
+import json
 from collections.abc import Mapping
 from typing import Literal
 
@@ -37,20 +38,29 @@ class BitbucketProvider(PipelineProvider):
                 "Authorization": f"Basic {auth_b64}",
                 "Content-Type": "application/json",
             }
+            variables = [
+                {"key": "SCANNER_ID", "value": scanner_id},
+                {"key": "TEST_NAME", "value": test.name},
+                {"key": "TEST_TYPE", "value": test.type},
+                {"key": "SOURCE_URL", "value": test.source.url},
+                {"key": "SOURCE_REF", "value": test.source.ref},
+                {"key": "REGISTRY_REF", "value": registry_ref},
+                {"key": "SCAN_PATHS", "value": json.dumps(test.scan_paths)},
+                {"key": "TIMEOUT", "value": test.timeout},
+            ]
+
+            if test.scan_configs is not None:
+                variables.append(
+                    {"key": "SCAN_CONFIGS", "value": json.dumps(test.scan_configs)}
+                )
+
             payload = {
                 "target": {
                     "ref_type": "branch",
                     "type": "pipeline_ref_target",
                     "ref_name": "main",
                 },
-                "variables": [
-                    {"key": "SCANNER_ID", "value": scanner_id},
-                    {"key": "TEST_NAME", "value": test.name},
-                    {"key": "TEST_TYPE", "value": test.type},
-                    {"key": "SOURCE_URL", "value": test.source.url},
-                    {"key": "SOURCE_REF", "value": test.source.ref},
-                    {"key": "REGISTRY_REF", "value": registry_ref},
-                ],
+                "variables": variables,
             }
 
             async with session.post(url, headers=headers, json=payload) as response:

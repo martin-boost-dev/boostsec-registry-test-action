@@ -72,6 +72,49 @@ async def test_dispatch_test_success(
     assert run_id == "123456"
 
 
+async def test_dispatch_test_with_scan_configs(github_config: GitHubConfig) -> None:
+    """dispatch_test includes scan_configs when provided."""
+    test_with_configs = Test(
+        name="config test",
+        type="source-code",
+        source=TestSource(
+            url="https://github.com/OWASP/NodeGoat.git",
+            ref="main",
+        ),
+        scan_paths=["."],
+        scan_configs=[{"key": "value"}],
+    )
+
+    provider = GitHubProvider(github_config)
+
+    with aioresponses() as m:
+        m.post(
+            f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
+            f"actions/workflows/{github_config.workflow_id}/dispatches",
+            status=204,
+        )
+        m.get(
+            f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
+            "actions/runs?per_page=5",
+            payload={
+                "workflow_runs": [
+                    {
+                        "id": 123456,
+                        "status": "in_progress",
+                        "created_at": "2099-01-01T12:00:00Z",
+                    }
+                ]
+            },
+        )
+
+        with patch("asyncio.sleep"):
+            run_id = await provider.dispatch_test(
+                "boostsecurityio/trivy-fs", test_with_configs, "main"
+            )
+
+    assert run_id == "123456"
+
+
 async def test_dispatch_test_failure(
     github_config: GitHubConfig, test_definition: Test
 ) -> None:

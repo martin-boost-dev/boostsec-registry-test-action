@@ -52,6 +52,35 @@ async def test_dispatch_test_success(
     assert pipeline_id == "789"
 
 
+async def test_dispatch_test_with_scan_configs(gitlab_config: GitLabConfig) -> None:
+    """dispatch_test includes scan_configs when provided."""
+    test_with_configs = Test(
+        name="config test",
+        type="source-code",
+        source=TestSource(
+            url="https://github.com/OWASP/NodeGoat.git",
+            ref="main",
+        ),
+        scan_paths=["."],
+        scan_configs=[{"key": "value"}],
+    )
+
+    provider = GitLabProvider(gitlab_config)
+
+    with aioresponses() as m:
+        m.post(
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
+            status=201,
+            payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
+        )
+
+        pipeline_id = await provider.dispatch_test(
+            "boostsecurityio/trivy-fs", test_with_configs, "main"
+        )
+
+    assert pipeline_id == "789"
+
+
 async def test_dispatch_test_failure(
     gitlab_config: GitLabConfig, test_definition: Test
 ) -> None:

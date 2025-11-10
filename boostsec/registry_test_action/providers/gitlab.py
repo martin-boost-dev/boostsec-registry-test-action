@@ -1,5 +1,6 @@
 """GitLab CI provider implementation."""
 
+import json
 from collections.abc import Mapping
 from typing import Literal
 
@@ -29,16 +30,25 @@ class GitLabProvider(PipelineProvider):
                 "PRIVATE-TOKEN": self.config.token,
                 "Content-Type": "application/json",
             }
+            variables = [
+                {"key": "SCANNER_ID", "value": scanner_id},
+                {"key": "TEST_NAME", "value": test.name},
+                {"key": "TEST_TYPE", "value": test.type},
+                {"key": "SOURCE_URL", "value": test.source.url},
+                {"key": "SOURCE_REF", "value": test.source.ref},
+                {"key": "REGISTRY_REF", "value": registry_ref},
+                {"key": "SCAN_PATHS", "value": json.dumps(test.scan_paths)},
+                {"key": "TIMEOUT", "value": test.timeout},
+            ]
+
+            if test.scan_configs is not None:
+                variables.append(
+                    {"key": "SCAN_CONFIGS", "value": json.dumps(test.scan_configs)}
+                )
+
             payload = {
                 "ref": self.config.ref,
-                "variables": [
-                    {"key": "SCANNER_ID", "value": scanner_id},
-                    {"key": "TEST_NAME", "value": test.name},
-                    {"key": "TEST_TYPE", "value": test.type},
-                    {"key": "SOURCE_URL", "value": test.source.url},
-                    {"key": "SOURCE_REF", "value": test.source.ref},
-                    {"key": "REGISTRY_REF", "value": registry_ref},
-                ],
+                "variables": variables,
             }
 
             async with session.post(url, headers=headers, json=payload) as response:

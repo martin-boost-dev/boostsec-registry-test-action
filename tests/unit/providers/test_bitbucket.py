@@ -61,6 +61,45 @@ async def test_dispatch_test_success(
     assert pipeline_id == "abc-123-def"
 
 
+async def test_dispatch_test_with_scan_configs(
+    bitbucket_config: BitbucketConfig,
+) -> None:
+    """dispatch_test includes scan_configs when provided."""
+    test_with_configs = Test(
+        name="config test",
+        type="source-code",
+        source=TestSource(
+            url="https://github.com/OWASP/NodeGoat.git",
+            ref="main",
+        ),
+        scan_paths=["."],
+        scan_configs=[{"key": "value"}],
+    )
+
+    provider = BitbucketProvider(bitbucket_config)
+
+    with aioresponses() as m:
+        m.post(
+            f"https://api.bitbucket.org/2.0/repositories/"
+            f"{bitbucket_config.workspace}/{bitbucket_config.repo_slug}/pipelines/",
+            status=201,
+            payload={
+                "uuid": "{abc-123-def}",
+                "links": {
+                    "html": {
+                        "href": "https://bitbucket.org/workspace/repo/pipelines/123"
+                    }
+                },
+            },
+        )
+
+        pipeline_id = await provider.dispatch_test(
+            "boostsecurityio/trivy-fs", test_with_configs, "main"
+        )
+
+    assert pipeline_id == "abc-123-def"
+
+
 async def test_dispatch_test_failure(
     bitbucket_config: BitbucketConfig, test_definition: Test
 ) -> None:

@@ -1,6 +1,7 @@
 """GitHub Actions provider implementation."""
 
 import asyncio
+import json
 import time
 from collections.abc import Mapping
 from typing import Literal
@@ -36,16 +37,23 @@ class GitHubProvider(PipelineProvider):
                 "Authorization": f"Bearer {self.config.token}",
                 "Accept": "application/vnd.github+json",
             }
+            inputs = {
+                "scanner_id": scanner_id,
+                "test_name": test.name,
+                "test_type": test.type,
+                "source_url": test.source.url,
+                "source_ref": test.source.ref,
+                "registry_ref": registry_ref,
+                "scan_paths": json.dumps(test.scan_paths),
+                "timeout": test.timeout,
+            }
+
+            if test.scan_configs is not None:
+                inputs["scan_configs"] = json.dumps(test.scan_configs)
+
             payload = {
                 "ref": self.config.ref,
-                "inputs": {
-                    "scanner_id": scanner_id,
-                    "test_name": test.name,
-                    "test_type": test.type,
-                    "source_url": test.source.url,
-                    "source_ref": test.source.ref,
-                    "registry_ref": registry_ref,
-                },
+                "inputs": inputs,
             }
 
             async with session.post(url, headers=headers, json=payload) as response:
