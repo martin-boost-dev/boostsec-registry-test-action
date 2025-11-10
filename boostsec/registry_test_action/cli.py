@@ -2,7 +2,9 @@
 
 import asyncio
 import json
+import logging
 import os
+import sys
 from pathlib import Path
 
 import typer
@@ -20,6 +22,15 @@ from boostsec.registry_test_action.providers.bitbucket import BitbucketProvider
 from boostsec.registry_test_action.providers.github import GitHubProvider
 from boostsec.registry_test_action.providers.gitlab import GitLabProvider
 
+# Configure logging - force reconfiguration
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stderr,
+    force=True,  # Force reconfiguration even if already set up
+)
+logger = logging.getLogger(__name__)
+
 app = typer.Typer()
 
 
@@ -36,21 +47,36 @@ def main(
     ),
 ) -> None:
     """Run scanner tests on a CI/CD provider."""
+    logger.info("=" * 80)
+    logger.info("Scanner Registry Test Action - Starting")
+    logger.info("=" * 80)
+    logger.info(f"Registry path: {registry_path}")
+    logger.info(f"Base ref: {base_ref}")
+    logger.info(f"Head ref: {head_ref}")
+    logger.info(f"Provider: {provider}")
+    logger.info(f"Working directory: {Path.cwd()}")
+
     registry_ref = head_ref
 
     try:
+        logger.info("Creating provider...")
         pipeline_provider = _create_provider(provider, provider_config)
+        logger.info(f"Provider created: {type(pipeline_provider).__name__}")
     except ValueError as e:
+        logger.error(f"Failed to create provider: {e}")
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
 
     orchestrator = TestOrchestrator(pipeline_provider)
 
     try:
+        logger.info("Starting test orchestration...")
         results = asyncio.run(
             orchestrator.run_tests(registry_path, base_ref, head_ref, registry_ref)
         )
-    except Exception as e:  # noqa: BLE001
+        logger.info(f"Test orchestration completed with {len(results)} results")
+    except Exception as e:
+        logger.exception("Test execution failed")
         typer.echo(f"Error running tests: {e}", err=True)
         raise typer.Exit(code=1)
 

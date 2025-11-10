@@ -1,6 +1,7 @@
 """Test orchestrator for coordinating test execution on a single provider."""
 
 import asyncio
+import logging
 from collections.abc import Awaitable
 from pathlib import Path
 
@@ -12,6 +13,8 @@ from boostsec.registry_test_action.models.test_result import TestResult
 from boostsec.registry_test_action.providers.base import PipelineProvider
 from boostsec.registry_test_action.scanner_detector import detect_changed_scanners
 from boostsec.registry_test_action.test_loader import load_all_tests
+
+logger = logging.getLogger(__name__)
 
 
 class TestOrchestrator:
@@ -31,15 +34,25 @@ class TestOrchestrator:
         registry_ref: str,
     ) -> list[TestResult]:
         """Run all tests for changed scanners on the configured provider."""
+        logger.info("Orchestrator: Detecting changed scanners...")
         scanner_ids = await detect_changed_scanners(registry_path, base_ref, head_ref)
 
         if not scanner_ids:
+            logger.info("No changed scanners detected")
             return []
 
+        logger.info(f"Loading test definitions for {len(scanner_ids)} scanners...")
         test_definitions = await load_all_tests(registry_path, scanner_ids)
-        tasks = self._build_test_tasks(test_definitions, scanner_ids, registry_ref)
+        logger.info(f"Loaded {len(test_definitions)} test definitions")
 
+        logger.info("Building test tasks...")
+        tasks = self._build_test_tasks(test_definitions, scanner_ids, registry_ref)
+        logger.info(f"Built {len(tasks)} test tasks")
+
+        logger.info("Executing tests...")
         results = await asyncio.gather(*tasks, return_exceptions=True)
+        logger.info("Test execution completed")
+
         return self._process_results(list(results))
 
     def _build_test_tasks(
