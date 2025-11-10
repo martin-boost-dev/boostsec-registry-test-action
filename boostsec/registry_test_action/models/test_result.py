@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 class TestResult(BaseModel):
     """Result of a single test execution."""
 
+    __test__ = False
+
     provider: str = Field(..., description="CI/CD provider name")
     scanner: str = Field(..., description="Scanner identifier")
     test_name: str = Field(..., description="Test name")

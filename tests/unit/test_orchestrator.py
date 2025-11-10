@@ -18,6 +18,8 @@ from boostsec.registry_test_action.providers.base import PipelineProvider
 class TestProvider(PipelineProvider):
     """Test provider implementation."""
 
+    __test__ = False
+
     def __init__(self) -> None:
         """Initialize test provider with mocks."""
         self.dispatch_test_mock = AsyncMock()

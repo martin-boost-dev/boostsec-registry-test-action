@@ -17,6 +17,8 @@ from boostsec.registry_test_action.test_loader import load_all_tests
 class TestOrchestrator:
     """Orchestrates test execution on a single provider."""
 
+    __test__ = False
+
     def __init__(self, provider: PipelineProvider) -> None:
         """Initialize orchestrator with a single provider."""
         self.provider = provider

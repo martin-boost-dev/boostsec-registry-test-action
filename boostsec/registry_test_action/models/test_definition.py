@@ -8,12 +8,16 @@ from pydantic import BaseModel, Field
 class TestSource(BaseModel):
     """Source repository configuration for a test."""
 
+    __test__ = False
+
     url: str = Field(..., description="Git repository URL (HTTPS only)")
     ref: str = Field(..., description="Git reference (branch, tag, or commit SHA)")
 
 
 class Test(BaseModel):
     """Individual test specification."""
+
+    __test__ = False
 
     name: str = Field(..., description="Human-readable test name")
     type: Literal["source-code", "docker-image"] = Field(
@@ -31,6 +35,8 @@ class Test(BaseModel):
 
 class TestDefinition(BaseModel):
     """Complete test definition loaded from tests.yaml."""
+
+    __test__ = False
 
     version: str = Field(..., description="Test definition schema version")
     tests: list[Test] = Field(default_factory=list, description="List of tests")
