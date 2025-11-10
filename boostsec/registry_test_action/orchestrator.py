@@ -81,8 +81,14 @@ class TestOrchestrator:
         final_results: list[TestResult] = []
         for result in results:
             if isinstance(result, TestResult):
+                test_id = f"{result.scanner}/{result.test_name}"
+                logger.info(f"Test result: {test_id} = {result.status}")
                 final_results.append(result)
             elif isinstance(result, Exception):
+                logger.error(
+                    f"Test execution error: {type(result).__name__}: {result}",
+                    exc_info=result,
+                )
                 error_result = TestResult(
                     provider="unknown",
                     scanner="unknown",
@@ -101,7 +107,11 @@ class TestOrchestrator:
         registry_ref: str,
     ) -> TestResult:
         """Run a single test on the provider and wait for completion."""
+        logger.info(f"Dispatching test: {scanner_id}/{test.name}")
         run_id = await self.provider.dispatch_test(scanner_id, test, registry_ref)
+        logger.info(f"Test dispatched with run_id: {run_id}")
+
+        logger.info(f"Waiting for test completion: {scanner_id}/{test.name}")
         result = await self.provider.wait_for_completion(run_id)
 
         result.scanner = scanner_id

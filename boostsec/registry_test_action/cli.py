@@ -35,7 +35,7 @@ app = typer.Typer()
 
 
 @app.command()
-def main(
+def main(  # noqa: C901
     registry_path: Path = typer.Option(..., help="Path to scanner registry repository"),  # noqa: B008
     base_ref: str = typer.Option(..., help="Base git reference (e.g., main)"),
     head_ref: str = typer.Option(..., help="Head git reference (e.g., PR branch)"),
@@ -84,6 +84,24 @@ def main(
         typer.echo("No tests to run")
         return
 
+    # Log results summary
+    logger.info("=" * 80)
+    logger.info("Test Results Summary:")
+    logger.info("=" * 80)
+    for result in results:
+        if result.status == "success":
+            msg = (
+                f"✓ {result.scanner}/{result.test_name}: {result.status} "
+                f"({result.duration:.2f}s)"
+            )
+            logger.info(msg)
+        else:
+            logger.error(f"✗ {result.scanner}/{result.test_name}: {result.status}")
+            if result.message:  # pragma: no cover
+                logger.error(f"  Message: {result.message}")
+            if result.run_url:  # pragma: no cover
+                logger.error(f"  Run URL: {result.run_url}")
+
     output = {
         "total": len(results),
         "passed": sum(1 for r in results if r.status == "success"),
@@ -108,6 +126,10 @@ def main(
 
     has_failures = any(r.status in {"failure", "error", "timeout"} for r in results)
     if has_failures:
+        fail_count = sum(
+            1 for r in results if r.status in {"failure", "error", "timeout"}
+        )
+        logger.error(f"Tests failed: {fail_count}/{len(results)}")
         raise typer.Exit(code=1)
 
 
