@@ -56,9 +56,11 @@ runs:
       env:
         PROVIDER_CONFIG: ${{ inputs.provider-config }}
       run: |
+        # Resolve registry path to absolute before changing directory
+        REGISTRY_PATH=$(realpath "${{ inputs.registry-path }}")
         cd ${{ github.action_path }}
         RESULTS=$(poetry run python -m boostsec.registry_test_action.cli \
-          --registry-path "${{ inputs.registry-path }}" \
+          --registry-path "$REGISTRY_PATH" \
           --base-ref "${{ inputs.base-ref }}" \
           --head-ref "${{ inputs.head-ref }}" \
           --provider "${{ inputs.provider }}" \
