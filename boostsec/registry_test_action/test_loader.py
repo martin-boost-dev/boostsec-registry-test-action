@@ -1,10 +1,13 @@
 """Load and parse test definitions from YAML files."""
 
+import logging
 from pathlib import Path
 
 import yaml
 
 from boostsec.registry_test_action.models.test_definition import TestDefinition
+
+logger = logging.getLogger(__name__)
 
 
 async def load_test_definition(registry_path: Path, scanner_id: str) -> TestDefinition:
@@ -60,10 +63,13 @@ async def load_all_tests(
 
     for scanner_id in scanner_ids:
         try:
+            logger.info(f"Loading test definition for scanner: {scanner_id}")
             definition = await load_test_definition(registry_path, scanner_id)
+            logger.info(f"Successfully loaded test definition for {scanner_id}")
             results[scanner_id] = definition
-        except (FileNotFoundError, ValueError):
-            # Skip scanners with missing or invalid test definitions
-            continue
+        except FileNotFoundError as e:
+            logger.warning(f"Skipping {scanner_id}: {e}")
+        except ValueError as e:
+            logger.error(f"Failed to load test definition for {scanner_id}: {e}")
 
     return results
