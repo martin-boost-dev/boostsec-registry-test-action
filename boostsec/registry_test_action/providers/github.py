@@ -37,13 +37,14 @@ class GitHubProvider(PipelineProvider):
                 "Accept": "application/vnd.github+json",
             }
             payload = {
-                "ref": registry_ref,
+                "ref": self.config.ref,
                 "inputs": {
                     "scanner_id": scanner_id,
                     "test_name": test.name,
                     "test_type": test.type,
                     "source_url": test.source.url,
                     "source_ref": test.source.ref,
+                    "registry_ref": registry_ref,
                 },
             }
 

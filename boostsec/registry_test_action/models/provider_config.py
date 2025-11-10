@@ -10,6 +10,10 @@ class GitHubConfig(BaseModel):
     owner: str = Field(..., description="Repository owner")
     repo: str = Field(..., description="Repository name")
     workflow_id: str = Field(..., description="Workflow file name or ID")
+    ref: str = Field(
+        default="main",
+        description="Git reference to run workflow on in test runner repo",
+    )
     base_url: str = Field(
         default="https://api.github.com", description="GitHub API base URL"
     )

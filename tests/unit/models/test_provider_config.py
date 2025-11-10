@@ -23,6 +23,19 @@ def test_github_config_valid() -> None:
     assert config.owner == "boostsecurityio"
     assert config.repo == "test-repo"
     assert config.workflow_id == "test.yml"
+    assert config.ref == "main"  # Default value
+
+
+def test_github_config_custom_ref() -> None:
+    """GitHubConfig accepts custom ref."""
+    config = GitHubConfig(
+        token="ghp_token123",
+        owner="boostsecurityio",
+        repo="test-repo",
+        workflow_id="test.yml",
+        ref="develop",
+    )
+    assert config.ref == "develop"
 
 
 def test_github_config_missing_fields() -> None:
