@@ -20,10 +20,11 @@ inputs:
   base-ref:
     description: 'Base git reference to compare against'
     required: true
-    default: 'main'
+    default: 'origin/main'
   head-ref:
-    description: 'Head git reference (current branch)'
-    required: true
+    description: 'Head git reference (current commit)'
+    required: false
+    default: 'HEAD'
 
 outputs:
   results:

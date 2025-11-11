@@ -228,9 +228,11 @@ All examples above can include these optional parameters:
     provider: github
     provider-config: '{ ... }'
     registry-path: '.'           # Path to scanner registry (default: '.')
-    base-ref: 'main'             # Base git reference (default: 'main')
-    head-ref: ${{ github.head_ref }}  # Head git reference (required)
+    base-ref: 'origin/main'      # Base git reference (default: 'origin/main')
+    head-ref: 'HEAD'             # Head git reference (default: 'HEAD')
 ```
+
+**Note**: In GitHub Actions, the `base-ref` should use the `origin/` prefix (e.g., `origin/main`) since the checkout action creates a detached HEAD with only remote refs available.
 
 ## Development
 
@@ -279,7 +281,8 @@ boostsec-registry-test-action/
 ├── boostsec/
 │   └── registry_test_action/
 │       ├── __init__.py
-│       ├── main.py                    # Entry point (Typer CLI)
+│       ├── cli.py                     # CLI entry point
+│       ├── orchestrator.py            # Test orchestration
 │       ├── scanner_detector.py        # Detect changed scanners
 │       ├── test_loader.py             # Load tests.yaml files
 │       ├── providers/
