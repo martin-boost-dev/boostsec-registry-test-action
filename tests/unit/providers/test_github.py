@@ -178,6 +178,8 @@ async def test_poll_status_completed_success(github_config: GitHubConfig) -> Non
                 "status": "completed",
                 "conclusion": "success",
                 "html_url": "https://github.com/owner/repo/actions/runs/123",
+                "created_at": "2099-01-01T12:00:00Z",
+                "updated_at": "2099-01-01T12:01:30Z",
             },
         )
 
@@ -186,6 +188,7 @@ async def test_poll_status_completed_success(github_config: GitHubConfig) -> Non
     assert is_complete is True
     assert result.status == "success"
     assert result.provider == "github"
+    assert result.duration == 90.0  # 1 minute 30 seconds
 
 
 async def test_poll_status_completed_failure(github_config: GitHubConfig) -> None:
@@ -200,6 +203,8 @@ async def test_poll_status_completed_failure(github_config: GitHubConfig) -> Non
                 "status": "completed",
                 "conclusion": "failure",
                 "html_url": "https://github.com/owner/repo/actions/runs/123",
+                "created_at": "2099-01-01T12:00:00Z",
+                "updated_at": "2099-01-01T12:05:45Z",
             },
         )
 
@@ -207,6 +212,7 @@ async def test_poll_status_completed_failure(github_config: GitHubConfig) -> Non
 
     assert is_complete is True
     assert result.status == "failure"
+    assert result.duration == 345.0  # 5 minutes 45 seconds
 
 
 async def test_poll_status_api_error(github_config: GitHubConfig) -> None:
@@ -238,6 +244,63 @@ async def test_map_conclusion_all_statuses(github_config: GitHubConfig) -> None:
     assert provider._map_conclusion("skipped") == "error"
     assert provider._map_conclusion("stale") == "error"
     assert provider._map_conclusion("unknown") == "error"
+
+
+async def test_calculate_duration_success(github_config: GitHubConfig) -> None:
+    """_calculate_duration computes duration from timestamps."""
+    provider = GitHubProvider(github_config)
+
+    data = {
+        "created_at": "2099-01-01T12:00:00Z",
+        "updated_at": "2099-01-01T12:05:30Z",
+    }
+
+    duration = provider._calculate_duration(data)
+    assert duration == 330.0  # 5 minutes 30 seconds
+
+
+async def test_calculate_duration_missing_timestamps(
+    github_config: GitHubConfig,
+) -> None:
+    """_calculate_duration returns 0.0 when timestamps are missing."""
+    provider = GitHubProvider(github_config)
+
+    # Missing both
+    assert provider._calculate_duration({}) == 0.0
+
+    # Missing updated_at
+    assert provider._calculate_duration({"created_at": "2099-01-01T12:00:00Z"}) == 0.0
+
+    # Missing created_at
+    assert provider._calculate_duration({"updated_at": "2099-01-01T12:00:00Z"}) == 0.0
+
+
+async def test_calculate_duration_invalid_format(github_config: GitHubConfig) -> None:
+    """_calculate_duration returns 0.0 when timestamp format is invalid."""
+    provider = GitHubProvider(github_config)
+
+    data = {
+        "created_at": "invalid-date",
+        "updated_at": "2099-01-01T12:00:00Z",
+    }
+
+    duration = provider._calculate_duration(data)
+    assert duration == 0.0
+
+
+async def test_calculate_duration_non_string_timestamps(
+    github_config: GitHubConfig,
+) -> None:
+    """_calculate_duration returns 0.0 when timestamps are not strings."""
+    provider = GitHubProvider(github_config)
+
+    data = {
+        "created_at": 123456,  # Not a string
+        "updated_at": "2099-01-01T12:00:00Z",
+    }
+
+    duration = provider._calculate_duration(data)
+    assert duration == 0.0
 
 
 async def test_find_workflow_run_not_found(github_config: GitHubConfig) -> None:

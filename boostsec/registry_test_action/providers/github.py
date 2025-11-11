@@ -111,6 +111,8 @@ class GitHubProvider(PipelineProvider):
             )
             return (False, result)
 
+        # Calculate duration from workflow run timestamps
+        duration = self._calculate_duration(data)
         test_status = self._map_conclusion(str(conclusion_str))
 
         result = TestResult(
@@ -118,7 +120,7 @@ class GitHubProvider(PipelineProvider):
             scanner="unknown",
             test_name="unknown",
             status=test_status,
-            duration=0.0,
+            duration=duration,
             run_url=html_url,
         )
 
@@ -190,6 +192,32 @@ class GitHubProvider(PipelineProvider):
                     return str(run_id)
 
         return None
+
+    def _calculate_duration(self, data: Mapping[str, object]) -> float:
+        """Calculate workflow run duration from timestamps.
+
+        Args:
+            data: Workflow run data from GitHub API
+
+        Returns:
+            Duration in seconds, or 0.0 if timestamps unavailable
+
+        """
+        from datetime import datetime
+
+        created_at = data.get("created_at")
+        updated_at = data.get("updated_at")
+
+        if not isinstance(created_at, str) or not isinstance(updated_at, str):
+            return 0.0
+
+        try:
+            created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            updated = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+            duration = (updated - created).total_seconds()
+            return max(0.0, duration)  # Ensure non-negative
+        except (ValueError, AttributeError):
+            return 0.0
 
     def _map_conclusion(
         self, conclusion: str
