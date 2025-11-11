@@ -46,7 +46,10 @@ async def test_dispatch_test_success(
         )
 
         pipeline_id = await provider.dispatch_test(
-            "boostsecurityio/trivy-fs", test_definition, "main"
+            "boostsecurityio/trivy-fs",
+            test_definition,
+            "main",
+            "https://github.com/test/registry",
         )
 
     assert pipeline_id == "789"
@@ -75,7 +78,10 @@ async def test_dispatch_test_with_scan_configs(gitlab_config: GitLabConfig) -> N
         )
 
         pipeline_id = await provider.dispatch_test(
-            "boostsecurityio/trivy-fs", test_with_configs, "main"
+            "boostsecurityio/trivy-fs",
+            test_with_configs,
+            "main",
+            "https://github.com/test/registry",
         )
 
     assert pipeline_id == "789"
@@ -96,7 +102,10 @@ async def test_dispatch_test_failure(
 
         with pytest.raises(RuntimeError, match="Failed to create pipeline"):
             await provider.dispatch_test(
-                "boostsecurityio/trivy-fs", test_definition, "main"
+                "boostsecurityio/trivy-fs",
+                test_definition,
+                "main",
+                "https://github.com/test/registry",
             )
 
 
@@ -115,7 +124,10 @@ async def test_dispatch_test_missing_pipeline_id(
 
         with pytest.raises(RuntimeError, match="Pipeline ID not found"):
             await provider.dispatch_test(
-                "boostsecurityio/trivy-fs", test_definition, "main"
+                "boostsecurityio/trivy-fs",
+                test_definition,
+                "main",
+                "https://github.com/test/registry",
             )
 
 

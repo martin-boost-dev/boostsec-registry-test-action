@@ -66,7 +66,10 @@ async def test_dispatch_test_success(
 
         with patch("asyncio.sleep"):
             run_id = await provider.dispatch_test(
-                "boostsecurityio/trivy-fs", test_definition, "main"
+                "boostsecurityio/trivy-fs",
+                test_definition,
+                "main",
+                "https://github.com/test/registry",
             )
 
     assert run_id == "123456"
@@ -109,7 +112,10 @@ async def test_dispatch_test_with_scan_configs(github_config: GitHubConfig) -> N
 
         with patch("asyncio.sleep"):
             run_id = await provider.dispatch_test(
-                "boostsecurityio/trivy-fs", test_with_configs, "main"
+                "boostsecurityio/trivy-fs",
+                test_with_configs,
+                "main",
+                "https://github.com/test/registry",
             )
 
     assert run_id == "123456"
@@ -131,7 +137,10 @@ async def test_dispatch_test_failure(
 
         with pytest.raises(RuntimeError, match="Failed to dispatch workflow"):
             await provider.dispatch_test(
-                "boostsecurityio/trivy-fs", test_definition, "main"
+                "boostsecurityio/trivy-fs",
+                test_definition,
+                "main",
+                "https://github.com/test/registry",
             )
 
 

@@ -11,7 +11,10 @@ from boostsec.registry_test_action.models.test_definition import (
     TestSource,
 )
 from boostsec.registry_test_action.models.test_result import TestResult
-from boostsec.registry_test_action.orchestrator import TestOrchestrator
+from boostsec.registry_test_action.orchestrator import (
+    TestOrchestrator,
+    get_repository_url,
+)
 from boostsec.registry_test_action.providers.base import PipelineProvider
 
 
@@ -26,10 +29,16 @@ class TestProvider(PipelineProvider):
         self.wait_for_completion_mock = AsyncMock()
 
     async def dispatch_test(
-        self, scanner_id: str, test: Test, registry_ref: str
+        self,
+        scanner_id: str,
+        test: Test,
+        registry_ref: str,
+        registry_url: str,
     ) -> str:
         """Mock dispatch."""
-        result: str = await self.dispatch_test_mock(scanner_id, test, registry_ref)
+        result: str = await self.dispatch_test_mock(
+            scanner_id, test, registry_ref, registry_url
+        )
         return result
 
     async def poll_status(self, run_id: str) -> tuple[bool, TestResult]:
@@ -65,9 +74,15 @@ async def test_run_tests_no_changed_scanners(test_provider: TestProvider) -> Non
     """run_tests returns empty list when no scanners changed."""
     orchestrator = TestOrchestrator(test_provider)
 
-    with patch(
-        "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
-    ) as mock_detect:
+    with (
+        patch(
+            "boostsec.registry_test_action.orchestrator.get_repository_url"
+        ) as mock_url,
+        patch(
+            "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
+        ) as mock_detect,
+    ):
+        mock_url.return_value = "https://github.com/test/registry"
         mock_detect.return_value = []
 
         results = await orchestrator.run_tests(
@@ -103,10 +118,14 @@ async def test_run_tests_single_scanner_single_test(
 
     with (
         patch(
+            "boostsec.registry_test_action.orchestrator.get_repository_url"
+        ) as mock_url,
+        patch(
             "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
         ) as mock_detect,
         patch("boostsec.registry_test_action.orchestrator.load_all_tests") as mock_load,
     ):
+        mock_url.return_value = "https://github.com/test/registry"
         mock_detect.return_value = ["scanner1"]
         mock_load.return_value = {"scanner1": test_def}
 
@@ -119,7 +138,7 @@ async def test_run_tests_single_scanner_single_test(
     assert results[0].test_name == "test1"
     assert results[0].status == "success"
     test_provider.dispatch_test_mock.assert_called_once_with(
-        "scanner1", test, "feature"
+        "scanner1", test, "feature", "https://github.com/test/registry"
     )
 
 
@@ -159,10 +178,14 @@ async def test_run_tests_multiple_scanners_multiple_tests(
 
     with (
         patch(
+            "boostsec.registry_test_action.orchestrator.get_repository_url"
+        ) as mock_url,
+        patch(
             "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
         ) as mock_detect,
         patch("boostsec.registry_test_action.orchestrator.load_all_tests") as mock_load,
     ):
+        mock_url.return_value = "https://github.com/test/registry"
         mock_detect.return_value = ["scanner1", "scanner2"]
         mock_load.return_value = {"scanner1": test_def1, "scanner2": test_def2}
 
@@ -192,10 +215,14 @@ async def test_run_tests_handles_exceptions(test_provider: TestProvider) -> None
 
     with (
         patch(
+            "boostsec.registry_test_action.orchestrator.get_repository_url"
+        ) as mock_url,
+        patch(
             "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
         ) as mock_detect,
         patch("boostsec.registry_test_action.orchestrator.load_all_tests") as mock_load,
     ):
+        mock_url.return_value = "https://github.com/test/registry"
         mock_detect.return_value = ["scanner1"]
         mock_load.return_value = {"scanner1": test_def}
 
@@ -216,10 +243,14 @@ async def test_run_tests_skips_scanners_without_test_definitions(
 
     with (
         patch(
+            "boostsec.registry_test_action.orchestrator.get_repository_url"
+        ) as mock_url,
+        patch(
             "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
         ) as mock_detect,
         patch("boostsec.registry_test_action.orchestrator.load_all_tests") as mock_load,
     ):
+        mock_url.return_value = "https://github.com/test/registry"
         mock_detect.return_value = ["scanner1", "scanner2"]
         mock_load.return_value = {}
 
@@ -229,3 +260,33 @@ async def test_run_tests_skips_scanners_without_test_definitions(
 
     assert results == []
     test_provider.dispatch_test_mock.assert_not_called()
+
+
+def test_get_repository_url_success(tmp_path: Path) -> None:
+    """get_repository_url returns the remote URL from git config."""
+    import subprocess
+
+    # Initialize a git repo
+    subprocess.run(
+        ["git", "init"],  # noqa: S607
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "remote", "add", "origin", "https://github.com/test/repo.git"],  # noqa: S607
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+
+    url = get_repository_url(tmp_path)
+
+    assert url == "https://github.com/test/repo.git"
+
+
+def test_get_repository_url_failure(tmp_path: Path) -> None:
+    """get_repository_url raises RuntimeError when git config fails."""
+    # Create directory without git repo
+    with pytest.raises(RuntimeError, match="Failed to get repository URL"):
+        get_repository_url(tmp_path)

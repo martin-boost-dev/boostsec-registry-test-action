@@ -22,7 +22,11 @@ class BitbucketProvider(PipelineProvider):
         self.base_url = "https://api.bitbucket.org/2.0"
 
     async def dispatch_test(
-        self, scanner_id: str, test: Test, registry_ref: str
+        self,
+        scanner_id: str,
+        test: Test,
+        registry_ref: str,
+        registry_url: str,
     ) -> str:
         """Trigger pipeline and return pipeline UUID."""
         async with aiohttp.ClientSession() as session:
@@ -45,6 +49,7 @@ class BitbucketProvider(PipelineProvider):
                 {"key": "SOURCE_URL", "value": test.source.url},
                 {"key": "SOURCE_REF", "value": test.source.ref},
                 {"key": "REGISTRY_REF", "value": registry_ref},
+                {"key": "REGISTRY_URL", "value": registry_url},
                 {"key": "SCAN_PATHS", "value": json.dumps(test.scan_paths)},
                 {"key": "TIMEOUT", "value": test.timeout},
             ]

@@ -12,7 +12,11 @@ class PipelineProvider(ABC):
 
     @abstractmethod
     async def dispatch_test(
-        self, scanner_id: str, test: Test, registry_ref: str
+        self,
+        scanner_id: str,
+        test: Test,
+        registry_ref: str,
+        registry_url: str,
     ) -> str:
         """Dispatch a test run and return a run identifier.
 
@@ -20,6 +24,7 @@ class PipelineProvider(ABC):
             scanner_id: Scanner identifier (e.g., "boostsecurityio/trivy-fs")
             test: Test definition to execute
             registry_ref: Git ref of the registry (for checking out scanner)
+            registry_url: Git URL of the registry repository
 
         Returns:
             Run identifier for polling status

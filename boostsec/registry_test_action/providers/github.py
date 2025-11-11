@@ -23,7 +23,11 @@ class GitHubProvider(PipelineProvider):
         self.base_url = config.base_url
 
     async def dispatch_test(
-        self, scanner_id: str, test: Test, registry_ref: str
+        self,
+        scanner_id: str,
+        test: Test,
+        registry_ref: str,
+        registry_url: str,
     ) -> str:
         """Dispatch workflow and return run ID."""
         dispatch_time = time.time()
@@ -44,6 +48,7 @@ class GitHubProvider(PipelineProvider):
                 "source_url": test.source.url,
                 "source_ref": test.source.ref,
                 "registry_ref": registry_ref,
+                "registry_url": registry_url,
                 "scan_paths": json.dumps(test.scan_paths),
                 "timeout": test.timeout,
             }

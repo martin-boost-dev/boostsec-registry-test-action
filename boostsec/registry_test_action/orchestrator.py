@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import subprocess
 from collections.abc import Awaitable
 from pathlib import Path
 
@@ -15,6 +16,34 @@ from boostsec.registry_test_action.scanner_detector import detect_changed_scanne
 from boostsec.registry_test_action.test_loader import load_all_tests
 
 logger = logging.getLogger(__name__)
+
+
+def get_repository_url(registry_path: Path) -> str:
+    """Get the remote repository URL from the git repository.
+
+    Args:
+        registry_path: Path to the git repository
+
+    Returns:
+        Remote repository URL
+
+    Raises:
+        RuntimeError: If unable to get repository URL
+
+    """
+    try:
+        result = subprocess.run(
+            ["git", "config", "--get", "remote.origin.url"],  # noqa: S607
+            cwd=registry_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"Failed to get repository URL from {registry_path}: {e.stderr}"
+        )
 
 
 class TestOrchestrator:
@@ -34,6 +63,10 @@ class TestOrchestrator:
         registry_ref: str,
     ) -> list[TestResult]:
         """Run all tests for changed scanners on the configured provider."""
+        logger.info("Orchestrator: Getting registry URL...")
+        registry_url = get_repository_url(registry_path)
+        logger.info(f"Registry URL: {registry_url}")
+
         logger.info("Orchestrator: Detecting changed scanners...")
         scanner_ids = await detect_changed_scanners(registry_path, base_ref, head_ref)
 
@@ -46,7 +79,9 @@ class TestOrchestrator:
         logger.info(f"Loaded {len(test_definitions)} test definitions")
 
         logger.info("Building test tasks...")
-        tasks = self._build_test_tasks(test_definitions, scanner_ids, registry_ref)
+        tasks = self._build_test_tasks(
+            test_definitions, scanner_ids, registry_ref, registry_url
+        )
         logger.info(f"Built {len(tasks)} test tasks")
 
         logger.info("Executing tests...")
@@ -60,6 +95,7 @@ class TestOrchestrator:
         test_definitions: dict[str, TestDefinition],
         scanner_ids: list[str],
         registry_ref: str,
+        registry_url: str,
     ) -> list[Awaitable[TestResult]]:
         """Build list of test tasks to execute."""
         tasks: list[Awaitable[TestResult]] = []
@@ -69,7 +105,9 @@ class TestOrchestrator:
                 continue
 
             for test in test_def.tests:
-                task = self._run_single_test(scanner_id, test, registry_ref)
+                task = self._run_single_test(
+                    scanner_id, test, registry_ref, registry_url
+                )
                 tasks.append(task)
 
         return tasks
@@ -105,10 +143,13 @@ class TestOrchestrator:
         scanner_id: str,
         test: Test,
         registry_ref: str,
+        registry_url: str,
     ) -> TestResult:
         """Run a single test on the provider and wait for completion."""
         logger.info(f"Dispatching test: {scanner_id}/{test.name}")
-        run_id = await self.provider.dispatch_test(scanner_id, test, registry_ref)
+        run_id = await self.provider.dispatch_test(
+            scanner_id, test, registry_ref, registry_url
+        )
         logger.info(f"Test dispatched with run_id: {run_id}")
 
         logger.info(f"Waiting for test completion: {scanner_id}/{test.name}")

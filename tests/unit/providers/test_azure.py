@@ -54,7 +54,10 @@ async def test_dispatch_test_success(
         )
 
         run_id = await provider.dispatch_test(
-            "boostsecurityio/trivy-fs", test_definition, "main"
+            "boostsecurityio/trivy-fs",
+            test_definition,
+            "main",
+            "https://github.com/test/registry",
         )
 
     assert run_id == "999"
@@ -90,7 +93,10 @@ async def test_dispatch_test_with_scan_configs(azure_config: AzureDevOpsConfig) 
         )
 
         run_id = await provider.dispatch_test(
-            "boostsecurityio/trivy-fs", test_with_configs, "main"
+            "boostsecurityio/trivy-fs",
+            test_with_configs,
+            "main",
+            "https://github.com/test/registry",
         )
 
     assert run_id == "999"
@@ -113,7 +119,10 @@ async def test_dispatch_test_failure(
 
         with pytest.raises(RuntimeError, match="Failed to run pipeline"):
             await provider.dispatch_test(
-                "boostsecurityio/trivy-fs", test_definition, "main"
+                "boostsecurityio/trivy-fs",
+                test_definition,
+                "main",
+                "https://github.com/test/registry",
             )
 
 
@@ -134,7 +143,10 @@ async def test_dispatch_test_missing_run_id(
 
         with pytest.raises(RuntimeError, match="Run ID not found"):
             await provider.dispatch_test(
-                "boostsecurityio/trivy-fs", test_definition, "main"
+                "boostsecurityio/trivy-fs",
+                test_definition,
+                "main",
+                "https://github.com/test/registry",
             )
 
 
