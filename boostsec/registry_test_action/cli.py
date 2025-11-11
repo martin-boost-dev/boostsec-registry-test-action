@@ -131,6 +131,8 @@ def main(  # noqa: C901
                 f"({result.duration:.2f}s)"
             )
             logger.info(msg)
+            if result.run_url:  # pragma: no cover
+                logger.info(f"  Run URL: {result.run_url}")
         else:
             logger.error(f"✗ {result.scanner}/{result.test_name}: {result.status}")
             if result.message:  # pragma: no cover
