@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -34,6 +35,34 @@ logger = logging.getLogger(__name__)
 app = typer.Typer()
 
 
+def get_current_commit_sha(registry_path: Path) -> str:
+    """Get the current commit SHA from the registry repository.
+
+    Args:
+        registry_path: Path to the registry repository
+
+    Returns:
+        Current commit SHA
+
+    Raises:
+        RuntimeError: If unable to get commit SHA
+
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],  # noqa: S607
+            cwd=registry_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"Failed to get current commit SHA from {registry_path}: {e.stderr}"
+        )
+
+
 @app.command()
 def main(  # noqa: C901
     registry_path: Path = typer.Option(..., help="Path to scanner registry repository"),  # noqa: B008
@@ -56,7 +85,14 @@ def main(  # noqa: C901
     logger.info(f"Provider: {provider}")
     logger.info(f"Working directory: {Path.cwd()}")
 
-    registry_ref = head_ref
+    # Get the exact commit SHA instead of using branch name
+    try:
+        registry_ref = get_current_commit_sha(registry_path)
+        logger.info(f"Registry commit SHA: {registry_ref}")
+    except RuntimeError as e:
+        logger.error(f"Failed to get commit SHA: {e}")
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=1)
 
     try:
         logger.info("Creating provider...")
