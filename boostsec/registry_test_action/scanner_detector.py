@@ -70,48 +70,12 @@ async def has_test_definition(registry_path: Path, scanner_id: str) -> bool:
 async def _log_git_status(  # pragma: no cover
     registry_path: Path, base_ref: str, head_ref: str
 ) -> None:
-    """Log git repository status for debugging."""
-    # Log current branch
-    process = await asyncio.create_subprocess_exec(
-        "git",
-        "branch",
-        "--show-current",
-        cwd=registry_path,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, _ = await process.communicate()
-    current_branch = stdout.decode().strip() or "(detached HEAD)"
-    logger.info(f"Current git branch: {current_branch}")
+    """Log git repository status for debugging.
 
-    # Log available refs
-    process = await asyncio.create_subprocess_exec(
-        "git",
-        "show-ref",
-        cwd=registry_path,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, _ = await process.communicate()
-    if stdout:
-        refs = stdout.decode().strip().split("\n")[:10]  # First 10 refs
-        logger.info(f"Available git refs (first 10): {refs}")
-
-    # Check if base_ref exists
-    process = await asyncio.create_subprocess_exec(
-        "git",
-        "rev-parse",
-        "--verify",
-        base_ref,
-        cwd=registry_path,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await process.communicate()
-    if process.returncode == 0:
-        logger.info(f"Base ref '{base_ref}' exists: {stdout.decode().strip()}")
-    else:
-        logger.warning(f"Base ref '{base_ref}' not found: {stderr.decode().strip()}")
+    In GitHub Actions, the checkout is always in detached HEAD state
+    and branch names need the 'origin/' prefix (e.g., 'origin/main').
+    """
+    logger.info(f"Comparing refs: {base_ref}...{head_ref}")
 
 
 async def _resolve_ref(registry_path: Path, ref: str) -> str:
