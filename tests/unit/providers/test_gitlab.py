@@ -49,7 +49,7 @@ async def test_dispatch_test_success(
             "boostsecurityio/trivy-fs",
             test_definition,
             "main",
-            "https://github.com/test/registry",
+            "test/registry",
         )
 
     assert pipeline_id == "789"
@@ -81,7 +81,7 @@ async def test_dispatch_test_with_scan_configs(gitlab_config: GitLabConfig) -> N
             "boostsecurityio/trivy-fs",
             test_with_configs,
             "main",
-            "https://github.com/test/registry",
+            "test/registry",
         )
 
     assert pipeline_id == "789"
@@ -105,7 +105,7 @@ async def test_dispatch_test_failure(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
-                "https://github.com/test/registry",
+                "test/registry",
             )
 
 
@@ -127,7 +127,7 @@ async def test_dispatch_test_missing_pipeline_id(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
-                "https://github.com/test/registry",
+                "test/registry",
             )
 
 

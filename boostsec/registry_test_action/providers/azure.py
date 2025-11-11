@@ -25,7 +25,7 @@ class AzureDevOpsProvider(PipelineProvider):
         scanner_id: str,
         test: Test,
         registry_ref: str,
-        registry_url: str,
+        registry_repo: str,
     ) -> str:
         """Run pipeline and return run ID."""
         async with aiohttp.ClientSession() as session:
@@ -44,7 +44,7 @@ class AzureDevOpsProvider(PipelineProvider):
                 "SOURCE_URL": test.source.url,
                 "SOURCE_REF": test.source.ref,
                 "REGISTRY_REF": registry_ref,
-                "REGISTRY_URL": registry_url,
+                "REGISTRY_REPO": registry_repo,
                 "SCAN_PATHS": json.dumps(test.scan_paths),
                 "TIMEOUT": test.timeout,
             }

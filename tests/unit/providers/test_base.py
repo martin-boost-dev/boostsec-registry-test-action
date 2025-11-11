@@ -24,11 +24,11 @@ class TestPipelineProvider(PipelineProvider):
         scanner_id: str,
         test: Test,
         registry_ref: str,
-        registry_url: str,
+        registry_repo: str,
     ) -> str:
         """Mock implementation."""
         result: str = await self.dispatch_test_mock(
-            scanner_id, test, registry_ref, registry_url
+            scanner_id, test, registry_ref, registry_repo
         )
         return result
 

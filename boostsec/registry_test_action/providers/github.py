@@ -27,7 +27,7 @@ class GitHubProvider(PipelineProvider):
         scanner_id: str,
         test: Test,
         registry_ref: str,
-        registry_url: str,
+        registry_repo: str,
     ) -> str:
         """Dispatch workflow and return run ID."""
         dispatch_time = time.time()
@@ -48,7 +48,7 @@ class GitHubProvider(PipelineProvider):
                 "source_url": test.source.url,
                 "source_ref": test.source.ref,
                 "registry_ref": registry_ref,
-                "registry_url": registry_url,
+                "registry_repo": registry_repo,
                 "scan_paths": json.dumps(test.scan_paths),
                 "timeout": test.timeout,
             }

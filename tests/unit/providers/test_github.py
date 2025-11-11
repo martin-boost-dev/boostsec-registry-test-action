@@ -69,7 +69,7 @@ async def test_dispatch_test_success(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
-                "https://github.com/test/registry",
+                "test/registry",
             )
 
     assert run_id == "123456"
@@ -115,7 +115,7 @@ async def test_dispatch_test_with_scan_configs(github_config: GitHubConfig) -> N
                 "boostsecurityio/trivy-fs",
                 test_with_configs,
                 "main",
-                "https://github.com/test/registry",
+                "test/registry",
             )
 
     assert run_id == "123456"
@@ -140,7 +140,7 @@ async def test_dispatch_test_failure(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
-                "https://github.com/test/registry",
+                "test/registry",
             )
 
 

@@ -58,7 +58,7 @@ async def test_dispatch_test_success(
             "boostsecurityio/trivy-fs",
             test_definition,
             "main",
-            "https://github.com/test/registry",
+            "test/registry",
         )
 
     assert pipeline_id == "abc-123-def"
@@ -100,7 +100,7 @@ async def test_dispatch_test_with_scan_configs(
             "boostsecurityio/trivy-fs",
             test_with_configs,
             "main",
-            "https://github.com/test/registry",
+            "test/registry",
         )
 
     assert pipeline_id == "abc-123-def"
@@ -125,7 +125,7 @@ async def test_dispatch_test_failure(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
-                "https://github.com/test/registry",
+                "test/registry",
             )
 
 
@@ -148,7 +148,7 @@ async def test_dispatch_test_missing_uuid(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
-                "https://github.com/test/registry",
+                "test/registry",
             )
 
 

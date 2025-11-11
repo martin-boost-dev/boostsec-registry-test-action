@@ -13,7 +13,7 @@ from boostsec.registry_test_action.models.test_definition import (
 from boostsec.registry_test_action.models.test_result import TestResult
 from boostsec.registry_test_action.orchestrator import (
     TestOrchestrator,
-    get_repository_url,
+    get_repository_identifier,
 )
 from boostsec.registry_test_action.providers.base import PipelineProvider
 
@@ -33,11 +33,11 @@ class TestProvider(PipelineProvider):
         scanner_id: str,
         test: Test,
         registry_ref: str,
-        registry_url: str,
+        registry_repo: str,
     ) -> str:
         """Mock dispatch."""
         result: str = await self.dispatch_test_mock(
-            scanner_id, test, registry_ref, registry_url
+            scanner_id, test, registry_ref, registry_repo
         )
         return result
 
@@ -76,13 +76,13 @@ async def test_run_tests_no_changed_scanners(test_provider: TestProvider) -> Non
 
     with (
         patch(
-            "boostsec.registry_test_action.orchestrator.get_repository_url"
+            "boostsec.registry_test_action.orchestrator.get_repository_identifier"
         ) as mock_url,
         patch(
             "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
         ) as mock_detect,
     ):
-        mock_url.return_value = "https://github.com/test/registry"
+        mock_url.return_value = "test/registry"
         mock_detect.return_value = []
 
         results = await orchestrator.run_tests(
@@ -118,14 +118,14 @@ async def test_run_tests_single_scanner_single_test(
 
     with (
         patch(
-            "boostsec.registry_test_action.orchestrator.get_repository_url"
+            "boostsec.registry_test_action.orchestrator.get_repository_identifier"
         ) as mock_url,
         patch(
             "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
         ) as mock_detect,
         patch("boostsec.registry_test_action.orchestrator.load_all_tests") as mock_load,
     ):
-        mock_url.return_value = "https://github.com/test/registry"
+        mock_url.return_value = "test/registry"
         mock_detect.return_value = ["scanner1"]
         mock_load.return_value = {"scanner1": test_def}
 
@@ -138,7 +138,7 @@ async def test_run_tests_single_scanner_single_test(
     assert results[0].test_name == "test1"
     assert results[0].status == "success"
     test_provider.dispatch_test_mock.assert_called_once_with(
-        "scanner1", test, "feature", "https://github.com/test/registry"
+        "scanner1", test, "feature", "test/registry"
     )
 
 
@@ -178,14 +178,14 @@ async def test_run_tests_multiple_scanners_multiple_tests(
 
     with (
         patch(
-            "boostsec.registry_test_action.orchestrator.get_repository_url"
+            "boostsec.registry_test_action.orchestrator.get_repository_identifier"
         ) as mock_url,
         patch(
             "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
         ) as mock_detect,
         patch("boostsec.registry_test_action.orchestrator.load_all_tests") as mock_load,
     ):
-        mock_url.return_value = "https://github.com/test/registry"
+        mock_url.return_value = "test/registry"
         mock_detect.return_value = ["scanner1", "scanner2"]
         mock_load.return_value = {"scanner1": test_def1, "scanner2": test_def2}
 
@@ -215,14 +215,14 @@ async def test_run_tests_handles_exceptions(test_provider: TestProvider) -> None
 
     with (
         patch(
-            "boostsec.registry_test_action.orchestrator.get_repository_url"
+            "boostsec.registry_test_action.orchestrator.get_repository_identifier"
         ) as mock_url,
         patch(
             "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
         ) as mock_detect,
         patch("boostsec.registry_test_action.orchestrator.load_all_tests") as mock_load,
     ):
-        mock_url.return_value = "https://github.com/test/registry"
+        mock_url.return_value = "test/registry"
         mock_detect.return_value = ["scanner1"]
         mock_load.return_value = {"scanner1": test_def}
 
@@ -243,14 +243,14 @@ async def test_run_tests_skips_scanners_without_test_definitions(
 
     with (
         patch(
-            "boostsec.registry_test_action.orchestrator.get_repository_url"
+            "boostsec.registry_test_action.orchestrator.get_repository_identifier"
         ) as mock_url,
         patch(
             "boostsec.registry_test_action.orchestrator.detect_changed_scanners"
         ) as mock_detect,
         patch("boostsec.registry_test_action.orchestrator.load_all_tests") as mock_load,
     ):
-        mock_url.return_value = "https://github.com/test/registry"
+        mock_url.return_value = "test/registry"
         mock_detect.return_value = ["scanner1", "scanner2"]
         mock_load.return_value = {}
 
@@ -262,8 +262,8 @@ async def test_run_tests_skips_scanners_without_test_definitions(
     test_provider.dispatch_test_mock.assert_not_called()
 
 
-def test_get_repository_url_success(tmp_path: Path) -> None:
-    """get_repository_url returns the remote URL from git config."""
+def test_get_repository_identifier_success(tmp_path: Path) -> None:
+    """get_repository_identifier returns org/repo from git config."""
     import subprocess
 
     # Initialize a git repo
@@ -280,13 +280,58 @@ def test_get_repository_url_success(tmp_path: Path) -> None:
         capture_output=True,
     )
 
-    url = get_repository_url(tmp_path)
+    repo_id = get_repository_identifier(tmp_path)
 
-    assert url == "https://github.com/test/repo.git"
+    assert repo_id == "test/repo"
 
 
-def test_get_repository_url_failure(tmp_path: Path) -> None:
-    """get_repository_url raises RuntimeError when git config fails."""
+def test_get_repository_identifier_ssh_url(tmp_path: Path) -> None:
+    """get_repository_identifier parses SSH URL format."""
+    import subprocess
+
+    # Initialize a git repo with SSH URL
+    subprocess.run(
+        ["git", "init"],  # noqa: S607
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "remote", "add", "origin", "git@github.com:test/repo.git"],  # noqa: S607
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+
+    repo_id = get_repository_identifier(tmp_path)
+
+    assert repo_id == "test/repo"
+
+
+def test_get_repository_identifier_unparseable_url(tmp_path: Path) -> None:
+    """get_repository_identifier raises RuntimeError for unparseable URL."""
+    import subprocess
+
+    # Initialize a git repo with unusual URL format
+    subprocess.run(
+        ["git", "init"],  # noqa: S607
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "remote", "add", "origin", "/local/path/to/repo"],  # noqa: S607
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+
+    with pytest.raises(RuntimeError, match="Unable to parse repository identifier"):
+        get_repository_identifier(tmp_path)
+
+
+def test_get_repository_identifier_failure(tmp_path: Path) -> None:
+    """get_repository_identifier raises RuntimeError when git config fails."""
     # Create directory without git repo
     with pytest.raises(RuntimeError, match="Failed to get repository URL"):
-        get_repository_url(tmp_path)
+        get_repository_identifier(tmp_path)

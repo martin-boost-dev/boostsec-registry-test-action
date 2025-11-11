@@ -16,7 +16,7 @@ class PipelineProvider(ABC):
         scanner_id: str,
         test: Test,
         registry_ref: str,
-        registry_url: str,
+        registry_repo: str,
     ) -> str:
         """Dispatch a test run and return a run identifier.
 
@@ -24,7 +24,7 @@ class PipelineProvider(ABC):
             scanner_id: Scanner identifier (e.g., "boostsecurityio/trivy-fs")
             test: Test definition to execute
             registry_ref: Git ref of the registry (for checking out scanner)
-            registry_url: Git URL of the registry repository
+            registry_repo: Registry repository in org/repo format
 
         Returns:
             Run identifier for polling status

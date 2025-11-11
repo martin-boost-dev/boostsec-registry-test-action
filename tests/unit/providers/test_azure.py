@@ -57,7 +57,7 @@ async def test_dispatch_test_success(
             "boostsecurityio/trivy-fs",
             test_definition,
             "main",
-            "https://github.com/test/registry",
+            "test/registry",
         )
 
     assert run_id == "999"
@@ -96,7 +96,7 @@ async def test_dispatch_test_with_scan_configs(azure_config: AzureDevOpsConfig) 
             "boostsecurityio/trivy-fs",
             test_with_configs,
             "main",
-            "https://github.com/test/registry",
+            "test/registry",
         )
 
     assert run_id == "999"
@@ -122,7 +122,7 @@ async def test_dispatch_test_failure(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
-                "https://github.com/test/registry",
+                "test/registry",
             )
 
 
@@ -146,7 +146,7 @@ async def test_dispatch_test_missing_run_id(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
-                "https://github.com/test/registry",
+                "test/registry",
             )
 
 

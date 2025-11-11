@@ -18,17 +18,17 @@ from boostsec.registry_test_action.test_loader import load_all_tests
 logger = logging.getLogger(__name__)
 
 
-def get_repository_url(registry_path: Path) -> str:
-    """Get the remote repository URL from the git repository.
+def get_repository_identifier(registry_path: Path) -> str:
+    """Get the repository identifier (org/repo) from the git repository.
 
     Args:
         registry_path: Path to the git repository
 
     Returns:
-        Remote repository URL
+        Repository identifier in org/repo format
 
     Raises:
-        RuntimeError: If unable to get repository URL
+        RuntimeError: If unable to get repository URL or parse it
 
     """
     try:
@@ -39,11 +39,31 @@ def get_repository_url(registry_path: Path) -> str:
             text=True,
             check=True,
         )
-        return result.stdout.strip()
+        url = result.stdout.strip()
     except subprocess.CalledProcessError as e:
         raise RuntimeError(
             f"Failed to get repository URL from {registry_path}: {e.stderr}"
         )
+
+    # Parse org/repo from URL
+    # Supports: https://github.com/org/repo.git, git@github.com:org/repo.git
+    if "github.com" in url or "gitlab.com" in url or "@" in url:
+        # Remove .git suffix if present
+        if url.endswith(".git"):
+            url = url[:-4]
+
+        # Extract org/repo from different URL formats
+        if url.startswith("https://") or url.startswith("http://"):
+            # https://github.com/org/repo
+            parts = url.split("/")
+            if len(parts) >= 2:
+                return f"{parts[-2]}/{parts[-1]}"
+        elif "@" in url and ":" in url:
+            # git@github.com:org/repo
+            repo_part = url.split(":")[-1]
+            return repo_part
+
+    raise RuntimeError(f"Unable to parse repository identifier from URL: {url}")
 
 
 class TestOrchestrator:
@@ -63,9 +83,9 @@ class TestOrchestrator:
         registry_ref: str,
     ) -> list[TestResult]:
         """Run all tests for changed scanners on the configured provider."""
-        logger.info("Orchestrator: Getting registry URL...")
-        registry_url = get_repository_url(registry_path)
-        logger.info(f"Registry URL: {registry_url}")
+        logger.info("Orchestrator: Getting registry identifier...")
+        registry_repo = get_repository_identifier(registry_path)
+        logger.info(f"Registry repository: {registry_repo}")
 
         logger.info("Orchestrator: Detecting changed scanners...")
         scanner_ids = await detect_changed_scanners(registry_path, base_ref, head_ref)
@@ -80,7 +100,7 @@ class TestOrchestrator:
 
         logger.info("Building test tasks...")
         tasks = self._build_test_tasks(
-            test_definitions, scanner_ids, registry_ref, registry_url
+            test_definitions, scanner_ids, registry_ref, registry_repo
         )
         logger.info(f"Built {len(tasks)} test tasks")
 
@@ -95,7 +115,7 @@ class TestOrchestrator:
         test_definitions: dict[str, TestDefinition],
         scanner_ids: list[str],
         registry_ref: str,
-        registry_url: str,
+        registry_repo: str,
     ) -> list[Awaitable[TestResult]]:
         """Build list of test tasks to execute."""
         tasks: list[Awaitable[TestResult]] = []
@@ -106,7 +126,7 @@ class TestOrchestrator:
 
             for test in test_def.tests:
                 task = self._run_single_test(
-                    scanner_id, test, registry_ref, registry_url
+                    scanner_id, test, registry_ref, registry_repo
                 )
                 tasks.append(task)
 
@@ -143,12 +163,12 @@ class TestOrchestrator:
         scanner_id: str,
         test: Test,
         registry_ref: str,
-        registry_url: str,
+        registry_repo: str,
     ) -> TestResult:
         """Run a single test on the provider and wait for completion."""
         logger.info(f"Dispatching test: {scanner_id}/{test.name}")
         run_id = await self.provider.dispatch_test(
-            scanner_id, test, registry_ref, registry_url
+            scanner_id, test, registry_ref, registry_repo
         )
         logger.info(f"Test dispatched with run_id: {run_id}")
 
