@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import subprocess
+import time
 from collections.abc import Awaitable
 from pathlib import Path
 
@@ -166,6 +167,8 @@ class TestOrchestrator:
         registry_repo: str,
     ) -> TestResult:
         """Run a single test on the provider and wait for completion."""
+        start_time = time.time()
+
         logger.info(f"Dispatching test: {scanner_id}/{test.name}")
         run_id = await self.provider.dispatch_test(
             scanner_id, test, registry_ref, registry_repo
@@ -175,7 +178,11 @@ class TestOrchestrator:
         logger.info(f"Waiting for test completion: {scanner_id}/{test.name}")
         result = await self.provider.wait_for_completion(run_id)
 
+        # Calculate actual duration
+        elapsed_time = time.time() - start_time
+
         result.scanner = scanner_id
         result.test_name = test.name
+        result.duration = elapsed_time
 
         return result
