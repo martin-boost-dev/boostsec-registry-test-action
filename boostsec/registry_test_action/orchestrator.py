@@ -83,11 +83,11 @@ class TestOrchestrator:
         registry_ref: str,
     ) -> list[TestResult]:
         """Run all tests for changed scanners on the configured provider."""
-        logger.info("Orchestrator: Getting registry identifier...")
+        logger.info("Getting registry identifier...")
         registry_repo = get_repository_identifier(registry_path)
         logger.info(f"Registry repository: {registry_repo}")
 
-        logger.info("Orchestrator: Detecting changed scanners...")
+        logger.info("Detecting changed scanners...")
         scanner_ids = await detect_changed_scanners(registry_path, base_ref, head_ref)
 
         if not scanner_ids:
