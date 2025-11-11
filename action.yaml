@@ -65,4 +65,8 @@ runs:
           --head-ref "${{ inputs.head-ref }}" \
           --provider "${{ inputs.provider }}" \
           --provider-config "$PROVIDER_CONFIG")
-        echo "results=$RESULTS" >> $GITHUB_OUTPUT
+        {
+          echo "results<<EOF"
+          echo "$RESULTS"
+          echo "EOF"
+        } >> $GITHUB_OUTPUT

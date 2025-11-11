@@ -1,395 +1,389 @@
-﻿2025-11-10T19:27:47.0761498Z Current runner version: '2.329.0'
-2025-11-10T19:27:47.0787268Z ##[group]Runner Image Provisioner
-2025-11-10T19:27:47.0788370Z Hosted Compute Agent
-2025-11-10T19:27:47.0789164Z Version: 20251016.436
-2025-11-10T19:27:47.0789844Z Commit: 8ab8ac8bfd662a3739dab9fe09456aba92132568
-2025-11-10T19:27:47.0790537Z Build Date: 2025-10-15T20:44:12Z
-2025-11-10T19:27:47.0791147Z ##[endgroup]
-2025-11-10T19:27:47.0791666Z ##[group]Operating System
-2025-11-10T19:27:47.0792313Z Ubuntu
-2025-11-10T19:27:47.0792789Z 24.04.3
-2025-11-10T19:27:47.0793202Z LTS
-2025-11-10T19:27:47.0793730Z ##[endgroup]
-2025-11-10T19:27:47.0794193Z ##[group]Runner Image
-2025-11-10T19:27:47.0795037Z Image: ubuntu-24.04
-2025-11-10T19:27:47.0795666Z Version: 20251102.99.1
-2025-11-10T19:27:47.0796639Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20251102.99/images/ubuntu/Ubuntu2404-Readme.md
-2025-11-10T19:27:47.0798255Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20251102.99
-2025-11-10T19:27:47.0799246Z ##[endgroup]
-2025-11-10T19:27:47.0800378Z ##[group]GITHUB_TOKEN Permissions
-2025-11-10T19:27:47.0802482Z Contents: read
-2025-11-10T19:27:47.0803034Z Metadata: read
-2025-11-10T19:27:47.0803606Z Packages: read
-2025-11-10T19:27:47.0804115Z ##[endgroup]
-2025-11-10T19:27:47.0806708Z Secret source: Actions
-2025-11-10T19:27:47.0807715Z Prepare workflow directory
-2025-11-10T19:27:47.1130494Z Prepare all required actions
-2025-11-10T19:27:47.1167921Z Getting action download info
-2025-11-10T19:27:47.4617219Z Download action repository 'actions/checkout@v4' (SHA:08eba0b27e820071cde6df949e0beb9ba4906955)
-2025-11-10T19:27:47.5323475Z Download action repository 'martin-boost-dev/boostsec-registry-test-action@896d1c81789c873e881e3a7217fdc5426f2f023b' (SHA:896d1c81789c873e881e3a7217fdc5426f2f023b)
-2025-11-10T19:27:47.9259744Z Getting action download info
-2025-11-10T19:27:48.0714298Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
-2025-11-10T19:27:48.1700159Z Complete job name: Github Actions
-2025-11-10T19:27:48.2366528Z ##[group]Run actions/checkout@v4
-2025-11-10T19:27:48.2367368Z with:
-2025-11-10T19:27:48.2367772Z   fetch-depth: 0
-2025-11-10T19:27:48.2368227Z   repository: boostsecurityio/dev-registry
-2025-11-10T19:27:48.2368925Z   token: ***
-2025-11-10T19:27:48.2369313Z   ssh-strict: true
-2025-11-10T19:27:48.2369720Z   ssh-user: git
-2025-11-10T19:27:48.2370143Z   persist-credentials: true
-2025-11-10T19:27:48.2370619Z   clean: true
-2025-11-10T19:27:48.2371023Z   sparse-checkout-cone-mode: true
-2025-11-10T19:27:48.2371515Z   fetch-tags: false
-2025-11-10T19:27:48.2371929Z   show-progress: true
-2025-11-10T19:27:48.2372343Z   lfs: false
-2025-11-10T19:27:48.2372723Z   submodules: false
-2025-11-10T19:27:48.2373133Z   set-safe-directory: true
-2025-11-10T19:27:48.2373800Z ##[endgroup]
-2025-11-10T19:27:48.3456310Z Syncing repository: boostsecurityio/dev-registry
-2025-11-10T19:27:48.3458246Z ##[group]Getting Git version info
-2025-11-10T19:27:48.3459193Z Working directory is '/home/runner/work/dev-registry/dev-registry'
-2025-11-10T19:27:48.3460237Z [command]/usr/bin/git version
-2025-11-10T19:27:48.3486927Z git version 2.51.2
-2025-11-10T19:27:48.3512752Z ##[endgroup]
-2025-11-10T19:27:48.3526261Z Temporarily overriding HOME='/home/runner/work/_temp/24b4dcab-6ae3-42c4-aa0a-fb6ce7fe9c60' before making global git config changes
-2025-11-10T19:27:48.3527625Z Adding repository directory to the temporary git global config as a safe directory
-2025-11-10T19:27:48.3531041Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dev-registry/dev-registry
-2025-11-10T19:27:48.3564660Z Deleting the contents of '/home/runner/work/dev-registry/dev-registry'
-2025-11-10T19:27:48.3568312Z ##[group]Initializing the repository
-2025-11-10T19:27:48.3571963Z [command]/usr/bin/git init /home/runner/work/dev-registry/dev-registry
-2025-11-10T19:27:48.3632446Z hint: Using 'master' as the name for the initial branch. This default branch name
-2025-11-10T19:27:48.3634063Z hint: is subject to change. To configure the initial branch name to use in all
-2025-11-10T19:27:48.3636073Z hint: of your new repositories, which will suppress this warning, call:
-2025-11-10T19:27:48.3637217Z hint:
-2025-11-10T19:27:48.3637955Z hint: 	git config --global init.defaultBranch <name>
-2025-11-10T19:27:48.3638730Z hint:
-2025-11-10T19:27:48.3639286Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
-2025-11-10T19:27:48.3640164Z hint: 'development'. The just-created branch can be renamed via this command:
-2025-11-10T19:27:48.3640852Z hint:
-2025-11-10T19:27:48.3641231Z hint: 	git branch -m <name>
-2025-11-10T19:27:48.3641676Z hint:
-2025-11-10T19:27:48.3642507Z hint: Disable this message with "git config set advice.defaultBranchName false"
-2025-11-10T19:27:48.3643851Z Initialized empty Git repository in /home/runner/work/dev-registry/dev-registry/.git/
-2025-11-10T19:27:48.3648429Z [command]/usr/bin/git remote add origin https://github.com/boostsecurityio/dev-registry
-2025-11-10T19:27:48.3679521Z ##[endgroup]
-2025-11-10T19:27:48.3680293Z ##[group]Disabling automatic garbage collection
-2025-11-10T19:27:48.3683368Z [command]/usr/bin/git config --local gc.auto 0
-2025-11-10T19:27:48.3711310Z ##[endgroup]
-2025-11-10T19:27:48.3712337Z ##[group]Setting up auth
-2025-11-10T19:27:48.3717569Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-2025-11-10T19:27:48.3746430Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2025-11-10T19:27:48.4003449Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2025-11-10T19:27:48.4032739Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2025-11-10T19:27:48.4253591Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
-2025-11-10T19:27:48.4296935Z ##[endgroup]
-2025-11-10T19:27:48.4298193Z ##[group]Fetching the repository
-2025-11-10T19:27:48.4307012Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/* +e121a906c6eb61b44856ecb007ee0e824a4f4d66:refs/remotes/pull/259/merge
-2025-11-10T19:27:48.7763480Z From https://github.com/boostsecurityio/dev-registry
-2025-11-10T19:27:48.7766256Z  * [new branch]      BST-10322-github-sci-scanner             -> origin/BST-10322-github-sci-scanner
-2025-11-10T19:27:48.7768513Z  * [new branch]      BST-10988                                -> origin/BST-10988
-2025-11-10T19:27:48.7772371Z  * [new branch]      BST-11911                                -> origin/BST-11911
-2025-11-10T19:27:48.7774865Z  * [new branch]      BST-12096--registry-create-new-secrets-rule-database -> origin/BST-12096--registry-create-new-secrets-rule-database
-2025-11-10T19:27:48.7777574Z  * [new branch]      BST-12156-gitleaks-fix                   -> origin/BST-12156-gitleaks-fix
-2025-11-10T19:27:48.7779481Z  * [new branch]      BST-13818-semgrep-update                 -> origin/BST-13818-semgrep-update
-2025-11-10T19:27:48.7781771Z  * [new branch]      BST-14065/update_semgrep_scanner_modules -> origin/BST-14065/update_semgrep_scanner_modules
-2025-11-10T19:27:48.7784949Z  * [new branch]      BST-14587-add-end-of-life-rule-to-registry -> origin/BST-14587-add-end-of-life-rule-to-registry
-2025-11-10T19:27:48.7787297Z  * [new branch]      BST-15235                                -> origin/BST-15235
-2025-11-10T19:27:48.7789032Z  * [new branch]      BST-15555                                -> origin/BST-15555
-2025-11-10T19:27:48.7790769Z  * [new branch]      BST-17783                                -> origin/BST-17783
-2025-11-10T19:27:48.7792614Z  * [new branch]      BST-17797-checkov                        -> origin/BST-17797-checkov
-2025-11-10T19:27:48.7794480Z  * [new branch]      BST-8791                                 -> origin/BST-8791
-2025-11-10T19:27:48.7796777Z  * [new branch]      add-cwe-1427                             -> origin/add-cwe-1427
-2025-11-10T19:27:48.7798673Z  * [new branch]      boost-mw-poc                             -> origin/boost-mw-poc
-2025-11-10T19:27:48.7800849Z  * [new branch]      bst-11135-update-osv-scanner             -> origin/bst-11135-update-osv-scanner
-2025-11-10T19:27:48.7803436Z  * [new branch]      bst-11709-osv-scanner-module-with-image  -> origin/bst-11709-osv-scanner-module-with-image
-2025-11-10T19:27:48.7806249Z  * [new branch]      bst-11946-critical_service               -> origin/bst-11946-critical_service
-2025-11-10T19:27:48.7808308Z  * [new branch]      bst-12039                                -> origin/bst-12039
-2025-11-10T19:27:48.7810233Z  * [new branch]      bst-12208-ai-rule-sci                    -> origin/bst-12208-ai-rule-sci
-2025-11-10T19:27:48.7812514Z  * [new branch]      bst-12221-ai-label-modelscan             -> origin/bst-12221-ai-label-modelscan
-2025-11-10T19:27:48.7815215Z  * [new branch]      bst-12247-boost-sca-trivy-update         -> origin/bst-12247-boost-sca-trivy-update
-2025-11-10T19:27:48.7818242Z  * [new branch]      bst-12254-rules-db-curating-secrets-descriptions -> origin/bst-12254-rules-db-curating-secrets-descriptions
-2025-11-10T19:27:48.7821364Z  * [new branch]      bst-12258-trivy-scanner-update-conv      -> origin/bst-12258-trivy-scanner-update-conv
-2025-11-10T19:27:48.7824004Z  * [new branch]      bst-13457-update-module-names            -> origin/bst-13457-update-module-names
-2025-11-10T19:27:48.7826691Z  * [new branch]      bst-16523-fix-semgrep                    -> origin/bst-16523-fix-semgrep
-2025-11-10T19:27:48.7828957Z  * [new branch]      bump-trivy-version                       -> origin/bump-trivy-version
-2025-11-10T19:27:48.7830960Z  * [new branch]      carrier                                  -> origin/carrier
-2025-11-10T19:27:48.7833197Z  * [new branch]      docker-sci                               -> origin/docker-sci
-2025-11-10T19:27:48.7835754Z  * [new branch]      feat/checkov-tag-checker                 -> origin/feat/checkov-tag-checker
-2025-11-10T19:27:48.7838133Z  * [new branch]      feat/osvScannerUpgrade                   -> origin/feat/osvScannerUpgrade
-2025-11-10T19:27:48.7840321Z  * [new branch]      feat/poutine                             -> origin/feat/poutine
-2025-11-10T19:27:48.7842590Z  * [new branch]      feat/terraform-tag-checker               -> origin/feat/terraform-tag-checker
-2025-11-10T19:27:48.7845662Z  * [new branch]      feature/prevent-phoning-home-to-semgrep  -> origin/feature/prevent-phoning-home-to-semgrep
-2025-11-10T19:27:48.7848356Z  * [new branch]      fix-binary-detection                     -> origin/fix-binary-detection
-2025-11-10T19:27:48.7850516Z  * [new branch]      images_cache                             -> origin/images_cache
-2025-11-10T19:27:48.7852856Z  * [new branch]      latest-scanner-composition               -> origin/latest-scanner-composition
-2025-11-10T19:27:48.7855647Z  * [new branch]      latestCheckovProcessor                   -> origin/latestCheckovProcessor
-2025-11-10T19:27:48.7857784Z  * [new branch]      main                                     -> origin/main
-2025-11-10T19:27:48.7859730Z  * [new branch]      maint/CheckovFix                         -> origin/maint/CheckovFix
-2025-11-10T19:27:48.7861842Z  * [new branch]      maint/bumpOSV                            -> origin/maint/bumpOSV
-2025-11-10T19:27:48.7863946Z  * [new branch]      maint/bumpTrivy                          -> origin/maint/bumpTrivy
-2025-11-10T19:27:48.7866416Z  * [new branch]      maint/fixComposition                     -> origin/maint/fixComposition
-2025-11-10T19:27:48.7868605Z  * [new branch]      maint/fixSCI                             -> origin/maint/fixSCI
-2025-11-10T19:27:48.7870788Z  * [new branch]      maint/latestIGitleaks                    -> origin/maint/latestIGitleaks
-2025-11-10T19:27:48.7873264Z  * [new branch]      maint/latestSCIDocker                    -> origin/maint/latestSCIDocker
-2025-11-10T19:27:48.7876343Z  * [new branch]      maint/latestSemgrepConverterFix          -> origin/maint/latestSemgrepConverterFix
-2025-11-10T19:27:48.7878875Z  * [new branch]      maint/lockfile                           -> origin/maint/lockfile
-2025-11-10T19:27:48.7881242Z  * [new branch]      maint/osvConverterLatest                 -> origin/maint/osvConverterLatest
-2025-11-10T19:27:48.7883742Z  * [new branch]      maint/osvScanner2                        -> origin/maint/osvScanner2
-2025-11-10T19:27:48.7886285Z  * [new branch]      maint/recommendedFlag                    -> origin/maint/recommendedFlag
-2025-11-10T19:27:48.7888765Z  * [new branch]      maint/removeNative                       -> origin/maint/removeNative
-2025-11-10T19:27:48.7891062Z  * [new branch]      maint/sciAiNewRules                      -> origin/maint/sciAiNewRules
-2025-11-10T19:27:48.7893198Z  * [new branch]      maint/sync                               -> origin/maint/sync
-2025-11-10T19:27:48.7895459Z  * [new branch]      maint/synch                              -> origin/maint/synch
-2025-11-10T19:27:48.7897629Z  * [new branch]      maint/trivySbomBump                      -> origin/maint/trivySbomBump
-2025-11-10T19:27:48.7900018Z  * [new branch]      maint/updateModelScan                    -> origin/maint/updateModelScan
-2025-11-10T19:27:48.7902229Z  * [new branch]      modelscan                                -> origin/modelscan
-2025-11-10T19:27:48.7904169Z  * [new branch]      poc-gencdx                               -> origin/poc-gencdx
-2025-11-10T19:27:48.7906043Z  * [new branch]      prevent-pull                             -> origin/prevent-pull
-2025-11-10T19:27:48.7907362Z  * [new branch]      re-apply-add-sci-sca                     -> origin/re-apply-add-sci-sca
-2025-11-10T19:27:48.7908706Z  * [new branch]      remove-old-cicd-rule                     -> origin/remove-old-cicd-rule
-2025-11-10T19:27:48.7910353Z  * [new branch]      remove-stored-secrets-on-cwe-200         -> origin/remove-stored-secrets-on-cwe-200
-2025-11-10T19:27:48.7911842Z  * [new branch]      scanner-composition                      -> origin/scanner-composition
-2025-11-10T19:27:48.7913136Z  * [new branch]      scanner-setup                            -> origin/scanner-setup
-2025-11-10T19:27:48.7914308Z  * [new branch]      semgrep-fix                              -> origin/semgrep-fix
-2025-11-10T19:27:48.7915758Z  * [new branch]      semgrep-update                           -> origin/semgrep-update
-2025-11-10T19:27:48.7916993Z  * [new branch]      semgrep/default                          -> origin/semgrep/default
-2025-11-10T19:27:48.7918314Z  * [new branch]      slef-test-codeql-image                   -> origin/slef-test-codeql-image
-2025-11-10T19:27:48.7919795Z  * [new branch]      supply-chain-inventory-prod              -> origin/supply-chain-inventory-prod
-2025-11-10T19:27:48.7921137Z  * [new branch]      test-native                              -> origin/test-native
-2025-11-10T19:27:48.7922264Z  * [new branch]      test-sci                                 -> origin/test-sci
-2025-11-10T19:27:48.7923354Z  * [new branch]      test-slef                                -> origin/test-slef
-2025-11-10T19:27:48.7924459Z  * [new branch]      trivy_args                               -> origin/trivy_args
-2025-11-10T19:27:48.7925911Z  * [new branch]      update-brakeman                          -> origin/update-brakeman
-2025-11-10T19:27:48.7927231Z  * [new branch]      update-codeql-version                    -> origin/update-codeql-version
-2025-11-10T19:27:48.7928769Z  * [new branch]      update-composition-scanner-ai-rules      -> origin/update-composition-scanner-ai-rules
-2025-11-10T19:27:48.7930208Z  * [new branch]      update-nancy                             -> origin/update-nancy
-2025-11-10T19:27:48.7931619Z  * [new branch]      update-npm-audit-post-processor          -> origin/update-npm-audit-post-processor
-2025-11-10T19:27:48.7933278Z  * [new branch]      update-trivy-version-sbom                -> origin/update-trivy-version-sbom
-2025-11-10T19:27:48.7935102Z  * [new branch]      update/brakeman-7.0.0                    -> origin/update/brakeman-7.0.0
-2025-11-10T19:27:48.7936342Z  * [new branch]      vnb-test                                 -> origin/vnb-test
-2025-11-10T19:27:48.7937455Z  * [new ref]         e121a906c6eb61b44856ecb007ee0e824a4f4d66 -> pull/259/merge
-2025-11-10T19:27:48.7949707Z ##[endgroup]
-2025-11-10T19:27:48.7950869Z ##[group]Determining the checkout info
-2025-11-10T19:27:48.7951934Z ##[endgroup]
-2025-11-10T19:27:48.7956278Z [command]/usr/bin/git sparse-checkout disable
-2025-11-10T19:27:48.7995059Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
-2025-11-10T19:27:48.8022634Z ##[group]Checking out the ref
-2025-11-10T19:27:48.8026914Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/259/merge
-2025-11-10T19:27:48.8312748Z Note: switching to 'refs/remotes/pull/259/merge'.
-2025-11-10T19:27:48.8313609Z
-2025-11-10T19:27:48.8314288Z You are in 'detached HEAD' state. You can look around, make experimental
-2025-11-10T19:27:48.8316162Z changes and commit them, and you can discard any commits you make in this
-2025-11-10T19:27:48.8317635Z state without impacting any branches by switching back to a branch.
-2025-11-10T19:27:48.8318847Z
-2025-11-10T19:27:48.8319702Z If you want to create a new branch to retain commits you create, you may
-2025-11-10T19:27:48.8321631Z do so (now or later) by using -c with the switch command. Example:
-2025-11-10T19:27:48.8322723Z
-2025-11-10T19:27:48.8323118Z   git switch -c <new-branch-name>
-2025-11-10T19:27:48.8323804Z
-2025-11-10T19:27:48.8324209Z Or undo this operation with:
-2025-11-10T19:27:48.8325106Z
-2025-11-10T19:27:48.8325568Z   git switch -
-2025-11-10T19:27:48.8326124Z
-2025-11-10T19:27:48.8327057Z Turn off this advice by setting config variable advice.detachedHead to false
-2025-11-10T19:27:48.8328417Z
-2025-11-10T19:27:48.8329891Z HEAD is now at e121a90 Merge 98ef0975c6dfc538a4ed5bc51090b78f4ea15177 into ed66953c2a1882af2a5676facc24eca72e57fff8
-2025-11-10T19:27:48.8334276Z ##[endgroup]
-2025-11-10T19:27:48.8366236Z [command]/usr/bin/git log -1 --format=%H
-2025-11-10T19:27:48.8388379Z e121a906c6eb61b44856ecb007ee0e824a4f4d66
-2025-11-10T19:27:48.8676756Z ##[group]Run martin-boost-dev/boostsec-registry-test-action@896d1c81789c873e881e3a7217fdc5426f2f023b
-2025-11-10T19:27:48.8677904Z with:
-2025-11-10T19:27:48.8678347Z   provider: github
-2025-11-10T19:27:48.8680567Z   provider-config: {
+﻿2025-11-11T16:09:43.4346040Z Current runner version: '2.329.0'
+2025-11-11T16:09:43.4369529Z ##[group]Runner Image Provisioner
+2025-11-11T16:09:43.4370432Z Hosted Compute Agent
+2025-11-11T16:09:43.4371005Z Version: 20251016.436
+2025-11-11T16:09:43.4371624Z Commit: 8ab8ac8bfd662a3739dab9fe09456aba92132568
+2025-11-11T16:09:43.4372365Z Build Date: 2025-10-15T20:44:12Z
+2025-11-11T16:09:43.4372949Z ##[endgroup]
+2025-11-11T16:09:43.4373521Z ##[group]Operating System
+2025-11-11T16:09:43.4374102Z Ubuntu
+2025-11-11T16:09:43.4374588Z 24.04.3
+2025-11-11T16:09:43.4375320Z LTS
+2025-11-11T16:09:43.4375934Z ##[endgroup]
+2025-11-11T16:09:43.4376473Z ##[group]Runner Image
+2025-11-11T16:09:43.4377041Z Image: ubuntu-24.04
+2025-11-11T16:09:43.4377595Z Version: 20251102.99.1
+2025-11-11T16:09:43.4378643Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20251102.99/images/ubuntu/Ubuntu2404-Readme.md
+2025-11-11T16:09:43.4380194Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20251102.99
+2025-11-11T16:09:43.4381266Z ##[endgroup]
+2025-11-11T16:09:43.4382311Z ##[group]GITHUB_TOKEN Permissions
+2025-11-11T16:09:43.4384180Z Contents: read
+2025-11-11T16:09:43.4384767Z Metadata: read
+2025-11-11T16:09:43.4385661Z Packages: read
+2025-11-11T16:09:43.4386182Z ##[endgroup]
+2025-11-11T16:09:43.4388241Z Secret source: Actions
+2025-11-11T16:09:43.4389049Z Prepare workflow directory
+2025-11-11T16:09:43.4717433Z Prepare all required actions
+2025-11-11T16:09:43.4755410Z Getting action download info
+2025-11-11T16:09:43.7859616Z Download action repository 'actions/checkout@v4' (SHA:08eba0b27e820071cde6df949e0beb9ba4906955)
+2025-11-11T16:09:43.9193295Z Download action repository 'martin-boost-dev/boostsec-registry-test-action@2fe861851db9c121923d5aacb8e9121f7e655dff' (SHA:2fe861851db9c121923d5aacb8e9121f7e655dff)
+2025-11-11T16:09:44.2763127Z Getting action download info
+2025-11-11T16:09:44.4281898Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2025-11-11T16:09:44.5801530Z Complete job name: Github Actions
+2025-11-11T16:09:44.6571366Z ##[group]Run actions/checkout@v4
+2025-11-11T16:09:44.6572651Z with:
+2025-11-11T16:09:44.6573368Z   fetch-depth: 0
+2025-11-11T16:09:44.6574235Z   repository: boostsecurityio/dev-registry
+2025-11-11T16:09:44.6575748Z   token: ***
+2025-11-11T16:09:44.6576480Z   ssh-strict: true
+2025-11-11T16:09:44.6577243Z   ssh-user: git
+2025-11-11T16:09:44.6578013Z   persist-credentials: true
+2025-11-11T16:09:44.6578890Z   clean: true
+2025-11-11T16:09:44.6579669Z   sparse-checkout-cone-mode: true
+2025-11-11T16:09:44.6580619Z   fetch-tags: false
+2025-11-11T16:09:44.6581384Z   show-progress: true
+2025-11-11T16:09:44.6582161Z   lfs: false
+2025-11-11T16:09:44.6582865Z   submodules: false
+2025-11-11T16:09:44.6583673Z   set-safe-directory: true
+2025-11-11T16:09:44.6584785Z ##[endgroup]
+2025-11-11T16:09:44.7684746Z Syncing repository: boostsecurityio/dev-registry
+2025-11-11T16:09:44.7688419Z ##[group]Getting Git version info
+2025-11-11T16:09:44.7689970Z Working directory is '/home/runner/work/dev-registry/dev-registry'
+2025-11-11T16:09:44.7692686Z [command]/usr/bin/git version
+2025-11-11T16:09:44.7796099Z git version 2.51.2
+2025-11-11T16:09:44.7822277Z ##[endgroup]
+2025-11-11T16:09:44.7836829Z Temporarily overriding HOME='/home/runner/work/_temp/2c09d139-89f2-4fe2-b28d-e18ac0cc9c6e' before making global git config changes
+2025-11-11T16:09:44.7839798Z Adding repository directory to the temporary git global config as a safe directory
+2025-11-11T16:09:44.7842780Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dev-registry/dev-registry
+2025-11-11T16:09:44.7878320Z Deleting the contents of '/home/runner/work/dev-registry/dev-registry'
+2025-11-11T16:09:44.7881795Z ##[group]Initializing the repository
+2025-11-11T16:09:44.7885718Z [command]/usr/bin/git init /home/runner/work/dev-registry/dev-registry
+2025-11-11T16:09:44.7996319Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-11-11T16:09:44.7999235Z hint: is subject to change. To configure the initial branch name to use in all
+2025-11-11T16:09:44.8002566Z hint: of your new repositories, which will suppress this warning, call:
+2025-11-11T16:09:44.8004082Z hint:
+2025-11-11T16:09:44.8005394Z hint: 	git config --global init.defaultBranch <name>
+2025-11-11T16:09:44.8006691Z hint:
+2025-11-11T16:09:44.8008296Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-11-11T16:09:44.8010274Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-11-11T16:09:44.8011828Z hint:
+2025-11-11T16:09:44.8012938Z hint: 	git branch -m <name>
+2025-11-11T16:09:44.8013928Z hint:
+2025-11-11T16:09:44.8015492Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2025-11-11T16:09:44.8017730Z Initialized empty Git repository in /home/runner/work/dev-registry/dev-registry/.git/
+2025-11-11T16:09:44.8021463Z [command]/usr/bin/git remote add origin https://github.com/boostsecurityio/dev-registry
+2025-11-11T16:09:44.8053658Z ##[endgroup]
+2025-11-11T16:09:44.8055740Z ##[group]Disabling automatic garbage collection
+2025-11-11T16:09:44.8057490Z [command]/usr/bin/git config --local gc.auto 0
+2025-11-11T16:09:44.8084915Z ##[endgroup]
+2025-11-11T16:09:44.8087021Z ##[group]Setting up auth
+2025-11-11T16:09:44.8090388Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-11-11T16:09:44.8120571Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-11-11T16:09:44.8477235Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-11-11T16:09:44.8507857Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-11-11T16:09:44.8726618Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-11-11T16:09:44.8769893Z ##[endgroup]
+2025-11-11T16:09:44.8771223Z ##[group]Fetching the repository
+2025-11-11T16:09:44.8780408Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/* +286c8473c2b375901b56dd42cc7b217a27305210:refs/remotes/pull/259/merge
+2025-11-11T16:09:45.2278642Z From https://github.com/boostsecurityio/dev-registry
+2025-11-11T16:09:45.2286264Z  * [new branch]      BST-10322-github-sci-scanner             -> origin/BST-10322-github-sci-scanner
+2025-11-11T16:09:45.2289633Z  * [new branch]      BST-10988                                -> origin/BST-10988
+2025-11-11T16:09:45.2292263Z  * [new branch]      BST-11911                                -> origin/BST-11911
+2025-11-11T16:09:45.2297018Z  * [new branch]      BST-12096--registry-create-new-secrets-rule-database -> origin/BST-12096--registry-create-new-secrets-rule-database
+2025-11-11T16:09:45.2301027Z  * [new branch]      BST-12156-gitleaks-fix                   -> origin/BST-12156-gitleaks-fix
+2025-11-11T16:09:45.2302701Z  * [new branch]      BST-13818-semgrep-update                 -> origin/BST-13818-semgrep-update
+2025-11-11T16:09:45.2304549Z  * [new branch]      BST-14065/update_semgrep_scanner_modules -> origin/BST-14065/update_semgrep_scanner_modules
+2025-11-11T16:09:45.2306974Z  * [new branch]      BST-14587-add-end-of-life-rule-to-registry -> origin/BST-14587-add-end-of-life-rule-to-registry
+2025-11-11T16:09:45.2308828Z  * [new branch]      BST-15235                                -> origin/BST-15235
+2025-11-11T16:09:45.2310189Z  * [new branch]      BST-15555                                -> origin/BST-15555
+2025-11-11T16:09:45.2311537Z  * [new branch]      BST-17783                                -> origin/BST-17783
+2025-11-11T16:09:45.2312971Z  * [new branch]      BST-17797-checkov                        -> origin/BST-17797-checkov
+2025-11-11T16:09:45.2314409Z  * [new branch]      BST-8791                                 -> origin/BST-8791
+2025-11-11T16:09:45.2316182Z  * [new branch]      add-cwe-1427                             -> origin/add-cwe-1427
+2025-11-11T16:09:45.2317630Z  * [new branch]      boost-mw-poc                             -> origin/boost-mw-poc
+2025-11-11T16:09:45.2319276Z  * [new branch]      bst-11135-update-osv-scanner             -> origin/bst-11135-update-osv-scanner
+2025-11-11T16:09:45.2321292Z  * [new branch]      bst-11709-osv-scanner-module-with-image  -> origin/bst-11709-osv-scanner-module-with-image
+2025-11-11T16:09:45.2323298Z  * [new branch]      bst-11946-critical_service               -> origin/bst-11946-critical_service
+2025-11-11T16:09:45.2324862Z  * [new branch]      bst-12039                                -> origin/bst-12039
+2025-11-11T16:09:45.2326448Z  * [new branch]      bst-12208-ai-rule-sci                    -> origin/bst-12208-ai-rule-sci
+2025-11-11T16:09:45.2328178Z  * [new branch]      bst-12221-ai-label-modelscan             -> origin/bst-12221-ai-label-modelscan
+2025-11-11T16:09:45.2330100Z  * [new branch]      bst-12247-boost-sca-trivy-update         -> origin/bst-12247-boost-sca-trivy-update
+2025-11-11T16:09:45.2332449Z  * [new branch]      bst-12254-rules-db-curating-secrets-descriptions -> origin/bst-12254-rules-db-curating-secrets-descriptions
+2025-11-11T16:09:45.2334857Z  * [new branch]      bst-12258-trivy-scanner-update-conv      -> origin/bst-12258-trivy-scanner-update-conv
+2025-11-11T16:09:45.2336946Z  * [new branch]      bst-13457-update-module-names            -> origin/bst-13457-update-module-names
+2025-11-11T16:09:45.2338719Z  * [new branch]      bst-16523-fix-semgrep                    -> origin/bst-16523-fix-semgrep
+2025-11-11T16:09:45.2340374Z  * [new branch]      bump-trivy-version                       -> origin/bump-trivy-version
+2025-11-11T16:09:45.2341834Z  * [new branch]      carrier                                  -> origin/carrier
+2025-11-11T16:09:45.2343377Z  * [new branch]      docker-sci                               -> origin/docker-sci
+2025-11-11T16:09:45.2344963Z  * [new branch]      feat/checkov-tag-checker                 -> origin/feat/checkov-tag-checker
+2025-11-11T16:09:45.2346895Z  * [new branch]      feat/osvScannerUpgrade                   -> origin/feat/osvScannerUpgrade
+2025-11-11T16:09:45.2348493Z  * [new branch]      feat/poutine                             -> origin/feat/poutine
+2025-11-11T16:09:45.2350129Z  * [new branch]      feat/terraform-tag-checker               -> origin/feat/terraform-tag-checker
+2025-11-11T16:09:45.2352190Z  * [new branch]      feature/prevent-phoning-home-to-semgrep  -> origin/feature/prevent-phoning-home-to-semgrep
+2025-11-11T16:09:45.2354164Z  * [new branch]      fix-binary-detection                     -> origin/fix-binary-detection
+2025-11-11T16:09:45.2355897Z  * [new branch]      images_cache                             -> origin/images_cache
+2025-11-11T16:09:45.2357505Z  * [new branch]      latest-scanner-composition               -> origin/latest-scanner-composition
+2025-11-11T16:09:45.2359297Z  * [new branch]      latestCheckovProcessor                   -> origin/latestCheckovProcessor
+2025-11-11T16:09:45.2360748Z  * [new branch]      main                                     -> origin/main
+2025-11-11T16:09:45.2362096Z  * [new branch]      maint/CheckovFix                         -> origin/maint/CheckovFix
+2025-11-11T16:09:45.2363561Z  * [new branch]      maint/bumpOSV                            -> origin/maint/bumpOSV
+2025-11-11T16:09:45.2365379Z  * [new branch]      maint/bumpTrivy                          -> origin/maint/bumpTrivy
+2025-11-11T16:09:45.2366995Z  * [new branch]      maint/fixComposition                     -> origin/maint/fixComposition
+2025-11-11T16:09:45.2368505Z  * [new branch]      maint/fixSCI                             -> origin/maint/fixSCI
+2025-11-11T16:09:45.2370010Z  * [new branch]      maint/latestIGitleaks                    -> origin/maint/latestIGitleaks
+2025-11-11T16:09:45.2371651Z  * [new branch]      maint/latestSCIDocker                    -> origin/maint/latestSCIDocker
+2025-11-11T16:09:45.2373611Z  * [new branch]      maint/latestSemgrepConverterFix          -> origin/maint/latestSemgrepConverterFix
+2025-11-11T16:09:45.2375471Z  * [new branch]      maint/lockfile                           -> origin/maint/lockfile
+2025-11-11T16:09:45.2377060Z  * [new branch]      maint/osvConverterLatest                 -> origin/maint/osvConverterLatest
+2025-11-11T16:09:45.2378705Z  * [new branch]      maint/osvScanner2                        -> origin/maint/osvScanner2
+2025-11-11T16:09:45.2380278Z  * [new branch]      maint/recommendedFlag                    -> origin/maint/recommendedFlag
+2025-11-11T16:09:45.2381862Z  * [new branch]      maint/removeNative                       -> origin/maint/removeNative
+2025-11-11T16:09:45.2383422Z  * [new branch]      maint/sciAiNewRules                      -> origin/maint/sciAiNewRules
+2025-11-11T16:09:45.2384868Z  * [new branch]      maint/sync                               -> origin/maint/sync
+2025-11-11T16:09:45.2386407Z  * [new branch]      maint/synch                              -> origin/maint/synch
+2025-11-11T16:09:45.2387869Z  * [new branch]      maint/trivySbomBump                      -> origin/maint/trivySbomBump
+2025-11-11T16:09:45.2389470Z  * [new branch]      maint/updateModelScan                    -> origin/maint/updateModelScan
+2025-11-11T16:09:45.2390946Z  * [new branch]      modelscan                                -> origin/modelscan
+2025-11-11T16:09:45.2392252Z  * [new branch]      poc-gencdx                               -> origin/poc-gencdx
+2025-11-11T16:09:45.2393621Z  * [new branch]      prevent-pull                             -> origin/prevent-pull
+2025-11-11T16:09:45.2395205Z  * [new branch]      re-apply-add-sci-sca                     -> origin/re-apply-add-sci-sca
+2025-11-11T16:09:45.2396770Z  * [new branch]      remove-old-cicd-rule                     -> origin/remove-old-cicd-rule
+2025-11-11T16:09:45.2398693Z  * [new branch]      remove-stored-secrets-on-cwe-200         -> origin/remove-stored-secrets-on-cwe-200
+2025-11-11T16:09:45.2400467Z  * [new branch]      scanner-composition                      -> origin/scanner-composition
+2025-11-11T16:09:45.2401961Z  * [new branch]      scanner-setup                            -> origin/scanner-setup
+2025-11-11T16:09:45.2403338Z  * [new branch]      semgrep-fix                              -> origin/semgrep-fix
+2025-11-11T16:09:45.2404736Z  * [new branch]      semgrep-update                           -> origin/semgrep-update
+2025-11-11T16:09:45.2406284Z  * [new branch]      semgrep/default                          -> origin/semgrep/default
+2025-11-11T16:09:45.2407825Z  * [new branch]      slef-test-codeql-image                   -> origin/slef-test-codeql-image
+2025-11-11T16:09:45.2409571Z  * [new branch]      supply-chain-inventory-prod              -> origin/supply-chain-inventory-prod
+2025-11-11T16:09:45.2411147Z  * [new branch]      test-native                              -> origin/test-native
+2025-11-11T16:09:45.2412461Z  * [new branch]      test-sci                                 -> origin/test-sci
+2025-11-11T16:09:45.2413734Z  * [new branch]      test-slef                                -> origin/test-slef
+2025-11-11T16:09:45.2415118Z  * [new branch]      trivy_args                               -> origin/trivy_args
+2025-11-11T16:09:45.2416489Z  * [new branch]      update-brakeman                          -> origin/update-brakeman
+2025-11-11T16:09:45.2418154Z  * [new branch]      update-codeql-version                    -> origin/update-codeql-version
+2025-11-11T16:09:45.2419991Z  * [new branch]      update-composition-scanner-ai-rules      -> origin/update-composition-scanner-ai-rules
+2025-11-11T16:09:45.2421714Z  * [new branch]      update-nancy                             -> origin/update-nancy
+2025-11-11T16:09:45.2424167Z  * [new branch]      update-npm-audit-post-processor          -> origin/update-npm-audit-post-processor
+2025-11-11T16:09:45.2427075Z  * [new branch]      update-trivy-version-sbom                -> origin/update-trivy-version-sbom
+2025-11-11T16:09:45.2428960Z  * [new branch]      update/brakeman-7.0.0                    -> origin/update/brakeman-7.0.0
+2025-11-11T16:09:45.2430531Z  * [new branch]      vnb-test                                 -> origin/vnb-test
+2025-11-11T16:09:45.2432737Z  * [new ref]         286c8473c2b375901b56dd42cc7b217a27305210 -> pull/259/merge
+2025-11-11T16:09:45.2436408Z ##[endgroup]
+2025-11-11T16:09:45.2437612Z ##[group]Determining the checkout info
+2025-11-11T16:09:45.2438884Z ##[endgroup]
+2025-11-11T16:09:45.2441813Z [command]/usr/bin/git sparse-checkout disable
+2025-11-11T16:09:45.2486251Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-11-11T16:09:45.2514315Z ##[group]Checking out the ref
+2025-11-11T16:09:45.2518076Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/259/merge
+2025-11-11T16:09:45.2807543Z Note: switching to 'refs/remotes/pull/259/merge'.
+2025-11-11T16:09:45.2808764Z
+2025-11-11T16:09:45.2809726Z You are in 'detached HEAD' state. You can look around, make experimental
+2025-11-11T16:09:45.2811219Z changes and commit them, and you can discard any commits you make in this
+2025-11-11T16:09:45.2812662Z state without impacting any branches by switching back to a branch.
+2025-11-11T16:09:45.2813923Z
+2025-11-11T16:09:45.2814845Z If you want to create a new branch to retain commits you create, you may
+2025-11-11T16:09:45.2817381Z do so (now or later) by using -c with the switch command. Example:
+2025-11-11T16:09:45.2818612Z
+2025-11-11T16:09:45.2819172Z   git switch -c <new-branch-name>
+2025-11-11T16:09:45.2820110Z
+2025-11-11T16:09:45.2820780Z Or undo this operation with:
+2025-11-11T16:09:45.2821714Z
+2025-11-11T16:09:45.2822233Z   git switch -
+2025-11-11T16:09:45.2822954Z
+2025-11-11T16:09:45.2824042Z Turn off this advice by setting config variable advice.detachedHead to false
+2025-11-11T16:09:45.2825857Z
+2025-11-11T16:09:45.2827567Z HEAD is now at 286c847 Merge e85ea423129f967de2554dcd491fd31740f401f0 into ed66953c2a1882af2a5676facc24eca72e57fff8
+2025-11-11T16:09:45.2832756Z ##[endgroup]
+2025-11-11T16:09:45.2861201Z [command]/usr/bin/git log -1 --format=%H
+2025-11-11T16:09:45.2883295Z 286c8473c2b375901b56dd42cc7b217a27305210
+2025-11-11T16:09:45.3175465Z ##[group]Run martin-boost-dev/boostsec-registry-test-action@2fe861851db9c121923d5aacb8e9121f7e655dff
+2025-11-11T16:09:45.3176933Z with:
+2025-11-11T16:09:45.3177565Z   provider: github
+2025-11-11T16:09:45.3180340Z   provider-config: {
   "token": "***",
   "owner": "martin-boost-dev",
   "repo": "boostsec-registry-test-runner",
   "workflow_id": "test-scanner.yml"
 }
 
-2025-11-10T19:27:48.8681872Z   registry-path: .
-2025-11-10T19:27:48.8682362Z   base-ref: main
-2025-11-10T19:27:48.8682849Z   head-ref: scanner-setup
-2025-11-10T19:27:48.8683377Z ##[endgroup]
-2025-11-10T19:27:48.8901945Z ##[group]Run actions/setup-python@v5
-2025-11-10T19:27:48.8902581Z with:
-2025-11-10T19:27:48.8903014Z   python-version: 3.12
-2025-11-10T19:27:48.8903525Z   check-latest: false
-2025-11-10T19:27:48.8904178Z   token: ***
-2025-11-10T19:27:48.8904669Z   update-environment: true
-2025-11-10T19:27:48.8905385Z   allow-prereleases: false
-2025-11-10T19:27:48.8905938Z   freethreaded: false
-2025-11-10T19:27:48.8906456Z ##[endgroup]
-2025-11-10T19:27:49.0562897Z ##[group]Installed versions
-2025-11-10T19:27:49.0647850Z Successfully set up CPython (3.12.12)
-2025-11-10T19:27:49.0649443Z ##[endgroup]
-2025-11-10T19:27:49.0777496Z ##[group]Run curl -sSL https://install.python-poetry.org | python3 -
-2025-11-10T19:27:49.0778805Z [36;1mcurl -sSL https://install.python-poetry.org | python3 -[0m
-2025-11-10T19:27:49.0779711Z [36;1mecho "$HOME/.local/bin" >> $GITHUB_PATH[0m
-2025-11-10T19:27:49.0823785Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
-2025-11-10T19:27:49.0824607Z env:
-2025-11-10T19:27:49.0825492Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:27:49.0826491Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib/pkgconfig
-2025-11-10T19:27:49.0827470Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:27:49.0828570Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:27:49.0829485Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:27:49.0830376Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib
-2025-11-10T19:27:49.0831122Z ##[endgroup]
-2025-11-10T19:28:00.5962110Z Retrieving Poetry metadata
-2025-11-10T19:28:00.5962695Z
-2025-11-10T19:28:00.5962892Z # Welcome to Poetry!
-2025-11-10T19:28:00.5963121Z
-2025-11-10T19:28:00.5963410Z This will download and install the latest version of Poetry,
-2025-11-10T19:28:00.5964033Z a dependency and package manager for Python.
-2025-11-10T19:28:00.5964410Z
-2025-11-10T19:28:00.5965013Z It will add the `poetry` command to Poetry's bin directory, located at:
-2025-11-10T19:28:00.5965498Z
-2025-11-10T19:28:00.5965687Z /home/runner/.local/bin
-2025-11-10T19:28:00.5965936Z
-2025-11-10T19:28:00.5966323Z You can uninstall at any time by executing this script with the --uninstall option,
-2025-11-10T19:28:00.5967112Z and these changes will be reverted.
-2025-11-10T19:28:00.5967468Z
-2025-11-10T19:28:00.5967670Z Installing Poetry (2.2.1)
-2025-11-10T19:28:00.5968357Z Installing Poetry (2.2.1): Creating environment
-2025-11-10T19:28:00.5969054Z Installing Poetry (2.2.1): Installing Poetry
-2025-11-10T19:28:00.5969653Z Installing Poetry (2.2.1): Creating script
-2025-11-10T19:28:00.5970234Z Installing Poetry (2.2.1): Done
-2025-11-10T19:28:00.5970573Z
-2025-11-10T19:28:00.5970780Z Poetry (2.2.1) is installed now. Great!
-2025-11-10T19:28:00.5971089Z
-2025-11-10T19:28:00.5971379Z You can test that everything is set up by executing:
-2025-11-10T19:28:00.5971763Z
-2025-11-10T19:28:00.5971914Z `poetry --version`
-2025-11-10T19:28:00.5972129Z
-2025-11-10T19:28:00.6147267Z ##[group]Run cd /home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/896d1c81789c873e881e3a7217fdc5426f2f023b
-2025-11-10T19:28:00.6148234Z [36;1mcd /home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/896d1c81789c873e881e3a7217fdc5426f2f023b[0m
-2025-11-10T19:28:00.6148845Z [36;1mpoetry install --only main[0m
-2025-11-10T19:28:00.6184420Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
-2025-11-10T19:28:00.6185015Z env:
-2025-11-10T19:28:00.6185323Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:28:00.6185772Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib/pkgconfig
-2025-11-10T19:28:00.6186216Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:28:00.6186615Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:28:00.6187020Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:28:00.6187423Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib
-2025-11-10T19:28:00.6187755Z ##[endgroup]
-2025-11-10T19:28:01.2354222Z Creating virtualenv boostsec-registry-test-action-uawWVrzb-py3.12 in /home/runner/.cache/pypoetry/virtualenvs
-2025-11-10T19:28:01.6587208Z Installing dependencies from lock file
-2025-11-10T19:28:01.8221989Z
-2025-11-10T19:28:01.8222507Z Package operations: 22 installs, 0 updates, 0 removals
-2025-11-10T19:28:01.8222917Z
-2025-11-10T19:28:01.8226822Z   - Installing mdurl (0.1.2)
-2025-11-10T19:28:01.9301216Z   - Installing frozenlist (1.8.0)
-2025-11-10T19:28:01.9308929Z   - Installing idna (3.11)
-2025-11-10T19:28:01.9316213Z   - Installing markdown-it-py (4.0.0)
-2025-11-10T19:28:01.9330759Z   - Installing multidict (6.7.0)
-2025-11-10T19:28:01.9344648Z   - Installing propcache (0.4.1)
-2025-11-10T19:28:01.9355870Z   - Installing pygments (2.19.2)
-2025-11-10T19:28:01.9364584Z   - Installing typing-extensions (4.15.0)
-2025-11-10T19:28:02.3628691Z   - Installing aiohappyeyeballs (2.6.1)
-2025-11-10T19:28:02.3635300Z   - Installing aiosignal (1.4.0)
-2025-11-10T19:28:02.3640574Z   - Installing annotated-types (0.7.0)
-2025-11-10T19:28:02.3645662Z   - Installing attrs (25.4.0)
-2025-11-10T19:28:02.3654335Z   - Installing click (8.3.0)
-2025-11-10T19:28:02.3667739Z   - Installing pydantic-core (2.41.5)
-2025-11-10T19:28:02.3673610Z   - Installing rich (14.2.0)
-2025-11-10T19:28:02.3686447Z   - Installing shellingham (1.5.4)
-2025-11-10T19:28:02.4522201Z   - Installing typing-inspection (0.4.2)
-2025-11-10T19:28:02.4545396Z   - Installing yarl (1.22.0)
-2025-11-10T19:28:02.6305959Z   - Installing aiohttp (3.13.2)
-2025-11-10T19:28:02.6313023Z   - Installing pydantic (2.12.4)
-2025-11-10T19:28:02.6324547Z   - Installing pyyaml (6.0.3)
-2025-11-10T19:28:02.6331411Z   - Installing typer (0.20.0)
-2025-11-10T19:28:02.8176115Z
-2025-11-10T19:28:02.8177154Z Installing the current project: boostsec-registry-test-action (1.0.0)
-2025-11-10T19:28:02.9113664Z ##[group]Run # Resolve registry path to absolute before changing directory
-2025-11-10T19:28:02.9114174Z [36;1m# Resolve registry path to absolute before changing directory[0m
-2025-11-10T19:28:02.9114513Z [36;1mREGISTRY_PATH=$(realpath ".")[0m
-2025-11-10T19:28:02.9115332Z [36;1mcd /home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/896d1c81789c873e881e3a7217fdc5426f2f023b[0m
-2025-11-10T19:28:02.9116007Z [36;1mRESULTS=$(poetry run python -m boostsec.registry_test_action.cli \[0m
-2025-11-10T19:28:02.9116416Z [36;1m  --registry-path "$REGISTRY_PATH" \[0m
-2025-11-10T19:28:02.9116687Z [36;1m  --base-ref "main" \[0m
-2025-11-10T19:28:02.9116935Z [36;1m  --head-ref "scanner-setup" \[0m
-2025-11-10T19:28:02.9117193Z [36;1m  --provider "github" \[0m
-2025-11-10T19:28:02.9117455Z [36;1m  --provider-config "$PROVIDER_CONFIG")[0m
-2025-11-10T19:28:02.9117749Z [36;1mecho "results=$RESULTS" >> $GITHUB_OUTPUT[0m
-2025-11-10T19:28:02.9151496Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
-2025-11-10T19:28:02.9151808Z env:
-2025-11-10T19:28:02.9152060Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:28:02.9152462Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib/pkgconfig
-2025-11-10T19:28:02.9152844Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:28:02.9153190Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:28:02.9153564Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
-2025-11-10T19:28:02.9154078Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib
-2025-11-10T19:28:02.9155828Z   PROVIDER_CONFIG: {
+2025-11-11T16:09:45.3182021Z   registry-path: .
+2025-11-11T16:09:45.3182721Z   base-ref: main
+2025-11-11T16:09:45.3183406Z   head-ref: scanner-setup
+2025-11-11T16:09:45.3184159Z ##[endgroup]
+2025-11-11T16:09:45.3406317Z ##[group]Run actions/setup-python@v5
+2025-11-11T16:09:45.3407160Z with:
+2025-11-11T16:09:45.3407772Z   python-version: 3.12
+2025-11-11T16:09:45.3408481Z   check-latest: false
+2025-11-11T16:09:45.3409394Z   token: ***
+2025-11-11T16:09:45.3410059Z   update-environment: true
+2025-11-11T16:09:45.3410826Z   allow-prereleases: false
+2025-11-11T16:09:45.3411574Z   freethreaded: false
+2025-11-11T16:09:45.3412294Z ##[endgroup]
+2025-11-11T16:09:45.5131602Z ##[group]Installed versions
+2025-11-11T16:09:45.5277815Z Successfully set up CPython (3.12.12)
+2025-11-11T16:09:45.5280135Z ##[endgroup]
+2025-11-11T16:09:45.5422085Z ##[group]Run curl -sSL https://install.python-poetry.org | python3 -
+2025-11-11T16:09:45.5424200Z [36;1mcurl -sSL https://install.python-poetry.org | python3 -[0m
+2025-11-11T16:09:45.5425602Z [36;1mecho "$HOME/.local/bin" >> $GITHUB_PATH[0m
+2025-11-11T16:09:45.5476480Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-11-11T16:09:45.5477502Z env:
+2025-11-11T16:09:45.5478294Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:09:45.5479582Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib/pkgconfig
+2025-11-11T16:09:45.5480859Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:09:45.5482253Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:09:45.5483421Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:09:45.5484577Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib
+2025-11-11T16:09:45.5485782Z ##[endgroup]
+2025-11-11T16:09:58.1148290Z Retrieving Poetry metadata
+2025-11-11T16:09:58.1149025Z
+2025-11-11T16:09:58.1149280Z # Welcome to Poetry!
+2025-11-11T16:09:58.1149596Z
+2025-11-11T16:09:58.1149994Z This will download and install the latest version of Poetry,
+2025-11-11T16:09:58.1150856Z a dependency and package manager for Python.
+2025-11-11T16:09:58.1151341Z
+2025-11-11T16:09:58.1151827Z It will add the `poetry` command to Poetry's bin directory, located at:
+2025-11-11T16:09:58.1152464Z
+2025-11-11T16:09:58.1152724Z /home/runner/.local/bin
+2025-11-11T16:09:58.1153061Z
+2025-11-11T16:09:58.1153595Z You can uninstall at any time by executing this script with the --uninstall option,
+2025-11-11T16:09:58.1154255Z and these changes will be reverted.
+2025-11-11T16:09:58.1154490Z
+2025-11-11T16:09:58.1154635Z Installing Poetry (2.2.1)
+2025-11-11T16:09:58.1155295Z Installing Poetry (2.2.1): Creating environment
+2025-11-11T16:09:58.1155780Z Installing Poetry (2.2.1): Installing Poetry
+2025-11-11T16:09:58.1156153Z Installing Poetry (2.2.1): Creating script
+2025-11-11T16:09:58.1156506Z Installing Poetry (2.2.1): Done
+2025-11-11T16:09:58.1156727Z
+2025-11-11T16:09:58.1156870Z Poetry (2.2.1) is installed now. Great!
+2025-11-11T16:09:58.1157086Z
+2025-11-11T16:09:58.1157312Z You can test that everything is set up by executing:
+2025-11-11T16:09:58.1157583Z
+2025-11-11T16:09:58.1157699Z `poetry --version`
+2025-11-11T16:09:58.1157853Z
+2025-11-11T16:09:58.1333163Z ##[group]Run cd /home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/2fe861851db9c121923d5aacb8e9121f7e655dff
+2025-11-11T16:09:58.1334168Z [36;1mcd /home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/2fe861851db9c121923d5aacb8e9121f7e655dff[0m
+2025-11-11T16:09:58.1334790Z [36;1mpoetry install --only main[0m
+2025-11-11T16:09:58.1369393Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-11-11T16:09:58.1369804Z env:
+2025-11-11T16:09:58.1370097Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:09:58.1370543Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib/pkgconfig
+2025-11-11T16:09:58.1370979Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:09:58.1371371Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:09:58.1371761Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:09:58.1372162Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib
+2025-11-11T16:09:58.1372505Z ##[endgroup]
+2025-11-11T16:09:59.0148967Z Creating virtualenv boostsec-registry-test-action-3DDLUOp7-py3.12 in /home/runner/.cache/pypoetry/virtualenvs
+2025-11-11T16:09:59.8190569Z Installing dependencies from lock file
+2025-11-11T16:09:59.9803186Z
+2025-11-11T16:09:59.9804323Z Package operations: 22 installs, 0 updates, 0 removals
+2025-11-11T16:09:59.9804907Z
+2025-11-11T16:09:59.9808029Z   - Installing mdurl (0.1.2)
+2025-11-11T16:10:00.0658325Z   - Installing frozenlist (1.8.0)
+2025-11-11T16:10:00.0664422Z   - Installing idna (3.11)
+2025-11-11T16:10:00.0676915Z   - Installing markdown-it-py (4.0.0)
+2025-11-11T16:10:00.0686624Z   - Installing multidict (6.7.0)
+2025-11-11T16:10:00.0699074Z   - Installing propcache (0.4.1)
+2025-11-11T16:10:00.0708646Z   - Installing pygments (2.19.2)
+2025-11-11T16:10:00.0726242Z   - Installing typing-extensions (4.15.0)
+2025-11-11T16:10:00.4052003Z   - Installing aiohappyeyeballs (2.6.1)
+2025-11-11T16:10:00.4059049Z   - Installing aiosignal (1.4.0)
+2025-11-11T16:10:00.4066500Z   - Installing annotated-types (0.7.0)
+2025-11-11T16:10:00.4079877Z   - Installing attrs (25.4.0)
+2025-11-11T16:10:00.4088136Z   - Installing click (8.3.0)
+2025-11-11T16:10:00.4101338Z   - Installing pydantic-core (2.41.5)
+2025-11-11T16:10:00.4107479Z   - Installing rich (14.2.0)
+2025-11-11T16:10:00.4120332Z   - Installing shellingham (1.5.4)
+2025-11-11T16:10:00.4890649Z   - Installing typing-inspection (0.4.2)
+2025-11-11T16:10:00.4966206Z   - Installing yarl (1.22.0)
+2025-11-11T16:10:00.6794309Z   - Installing aiohttp (3.13.2)
+2025-11-11T16:10:00.6801272Z   - Installing pydantic (2.12.4)
+2025-11-11T16:10:00.6814012Z   - Installing pyyaml (6.0.3)
+2025-11-11T16:10:00.6819233Z   - Installing typer (0.20.0)
+2025-11-11T16:10:00.8744971Z
+2025-11-11T16:10:00.8745944Z Installing the current project: boostsec-registry-test-action (1.0.0)
+2025-11-11T16:10:00.9719099Z ##[group]Run # Resolve registry path to absolute before changing directory
+2025-11-11T16:10:00.9719609Z [36;1m# Resolve registry path to absolute before changing directory[0m
+2025-11-11T16:10:00.9719951Z [36;1mREGISTRY_PATH=$(realpath ".")[0m
+2025-11-11T16:10:00.9720497Z [36;1mcd /home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/2fe861851db9c121923d5aacb8e9121f7e655dff[0m
+2025-11-11T16:10:00.9721163Z [36;1mRESULTS=$(poetry run python -m boostsec.registry_test_action.cli \[0m
+2025-11-11T16:10:00.9721551Z [36;1m  --registry-path "$REGISTRY_PATH" \[0m
+2025-11-11T16:10:00.9721823Z [36;1m  --base-ref "main" \[0m
+2025-11-11T16:10:00.9722063Z [36;1m  --head-ref "scanner-setup" \[0m
+2025-11-11T16:10:00.9722310Z [36;1m  --provider "github" \[0m
+2025-11-11T16:10:00.9722569Z [36;1m  --provider-config "$PROVIDER_CONFIG")[0m
+2025-11-11T16:10:00.9722865Z [36;1mecho "results=$RESULTS" >> $GITHUB_OUTPUT[0m
+2025-11-11T16:10:00.9756489Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-11-11T16:10:00.9756795Z env:
+2025-11-11T16:10:00.9757034Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:10:00.9757442Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib/pkgconfig
+2025-11-11T16:10:00.9757824Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:10:00.9758173Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:10:00.9758539Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.12/x64
+2025-11-11T16:10:00.9759049Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.12/x64/lib
+2025-11-11T16:10:00.9760295Z   PROVIDER_CONFIG: {
   "token": "***",
   "owner": "martin-boost-dev",
   "repo": "boostsec-registry-test-runner",
   "workflow_id": "test-scanner.yml"
 }
 
-2025-11-10T19:28:02.9156369Z ##[endgroup]
-2025-11-10T19:28:04.1812838Z 2025-11-10 19:28:04,181 - __main__ - INFO - ================================================================================
-2025-11-10T19:28:04.1813721Z 2025-11-10 19:28:04,181 - __main__ - INFO - Scanner Registry Test Action - Starting
-2025-11-10T19:28:04.1814516Z 2025-11-10 19:28:04,181 - __main__ - INFO - ================================================================================
-2025-11-10T19:28:04.1815587Z 2025-11-10 19:28:04,181 - __main__ - INFO - Registry path: /home/runner/work/dev-registry/dev-registry
-2025-11-10T19:28:04.1816418Z 2025-11-10 19:28:04,181 - __main__ - INFO - Base ref: main
-2025-11-10T19:28:04.1817003Z 2025-11-10 19:28:04,181 - __main__ - INFO - Head ref: scanner-setup
-2025-11-10T19:28:04.1817604Z 2025-11-10 19:28:04,181 - __main__ - INFO - Provider: github
-2025-11-10T19:28:04.1818756Z 2025-11-10 19:28:04,181 - __main__ - INFO - Working directory: /home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/896d1c81789c873e881e3a7217fdc5426f2f023b
-2025-11-10T19:28:04.1820004Z 2025-11-10 19:28:04,181 - __main__ - INFO - Creating provider...
-2025-11-10T19:28:04.1820685Z 2025-11-10 19:28:04,181 - __main__ - INFO - Provider created: GitHubProvider
-2025-11-10T19:28:04.1821363Z 2025-11-10 19:28:04,181 - __main__ - INFO - Starting test orchestration...
-2025-11-10T19:28:04.1822291Z 2025-11-10 19:28:04,181 - boostsec.registry_test_action.orchestrator - INFO - Orchestrator: Detecting changed scanners...
-2025-11-10T19:28:04.1823442Z 2025-11-10 19:28:04,182 - boostsec.registry_test_action.scanner_detector - INFO - Detecting changed scanners
-2025-11-10T19:28:04.1844948Z 2025-11-10 19:28:04,184 - boostsec.registry_test_action.scanner_detector - INFO - Current git branch: (detached HEAD)
-2025-11-10T19:28:04.1876003Z 2025-11-10 19:28:04,187 - boostsec.registry_test_action.scanner_detector - INFO - Available git refs (first 10): ['5da3d495efb0955900a4be2f86d56944ededc532 refs/remotes/origin/BST-10322-github-sci-scanner', '2623cbe768d51db9fb6f830d100219e8d048980b refs/remotes/origin/BST-10988', '7bf5529254da39dc50b4df9410cc739eec958088 refs/remotes/origin/BST-11911', '0039446107ef5b958ef6529bb40e930431ba3de8 refs/remotes/origin/BST-12096--registry-create-new-secrets-rule-database', 'b3f85ad81d57cb32cbca578c53ae04aba1e77705 refs/remotes/origin/BST-12156-gitleaks-fix', 'b3df83bebf5adbe69c7f5f8f82ef9fcae1db5802 refs/remotes/origin/BST-13818-semgrep-update', 'b27217b7ab9097f9d103abffd0fbf0370a827344 refs/remotes/origin/BST-14065/update_semgrep_scanner_modules', '48a863c8ebd79a6205c2bd92b4bfc555428e13b0 refs/remotes/origin/BST-14587-add-end-of-life-rule-to-registry', '926aea1e053aca52d663cc6aa7381d2b31b07f96 refs/remotes/origin/BST-15235', '4fcda19789105ed450aa4c8325841d24050d1604 refs/remotes/origin/BST-15555']
-2025-11-10T19:28:04.1889982Z 2025-11-10 19:28:04,188 - boostsec.registry_test_action.scanner_detector - WARNING - Base ref 'main' not found: fatal: Needed a single revision
-2025-11-10T19:28:04.1891301Z 2025-11-10 19:28:04,188 - boostsec.registry_test_action.scanner_detector - INFO - Running: git diff --name-only main scanner-setup
-2025-11-10T19:28:04.1907376Z 2025-11-10 19:28:04,190 - boostsec.registry_test_action.scanner_detector - ERROR - Git diff command failed with exit code 128
-2025-11-10T19:28:04.1908954Z 2025-11-10 19:28:04,190 - boostsec.registry_test_action.scanner_detector - ERROR - Git stderr: fatal: ambiguous argument 'main': unknown revision or path not in the working tree.
-2025-11-10T19:28:04.1910152Z Use '--' to separate paths from revisions, like this:
-2025-11-10T19:28:04.1910681Z 'git <command> [<revision>...] -- [<file>...]'
-2025-11-10T19:28:04.1921082Z 2025-11-10 19:28:04,190 - __main__ - ERROR - Test execution failed
-2025-11-10T19:28:04.1921654Z Traceback (most recent call last):
-2025-11-10T19:28:04.1929310Z   File "/home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/896d1c81789c873e881e3a7217fdc5426f2f023b/boostsec/registry_test_action/cli.py", line 74, in main
-2025-11-10T19:28:04.1930528Z     results = asyncio.run(
-2025-11-10T19:28:04.1930836Z               ^^^^^^^^^^^^
-2025-11-10T19:28:04.1931543Z   File "/opt/hostedtoolcache/Python/3.12.12/x64/lib/python3.12/asyncio/runners.py", line 195, in run
-2025-11-10T19:28:04.1932193Z     return runner.run(main)
-2025-11-10T19:28:04.1932484Z            ^^^^^^^^^^^^^^^^
-2025-11-10T19:28:04.1933128Z   File "/opt/hostedtoolcache/Python/3.12.12/x64/lib/python3.12/asyncio/runners.py", line 118, in run
-2025-11-10T19:28:04.1933856Z     return self._loop.run_until_complete(task)
-2025-11-10T19:28:04.1934225Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-2025-11-10T19:28:04.1935243Z   File "/opt/hostedtoolcache/Python/3.12.12/x64/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
-2025-11-10T19:28:04.1936029Z     return future.result()
-2025-11-10T19:28:04.1936356Z            ^^^^^^^^^^^^^^^
-2025-11-10T19:28:04.1937522Z   File "/home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/896d1c81789c873e881e3a7217fdc5426f2f023b/boostsec/registry_test_action/orchestrator.py", line 38, in run_tests
-2025-11-10T19:28:04.1938865Z     scanner_ids = await detect_changed_scanners(registry_path, base_ref, head_ref)
-2025-11-10T19:28:04.1939402Z                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-2025-11-10T19:28:04.1940775Z   File "/home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/896d1c81789c873e881e3a7217fdc5426f2f023b/boostsec/registry_test_action/scanner_detector.py", line 37, in detect_changed_scanners
-2025-11-10T19:28:04.1942237Z     changed_files = await _get_changed_files(registry_path, base_ref, head_ref)
-2025-11-10T19:28:04.1942982Z                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-2025-11-10T19:28:04.1944326Z   File "/home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/896d1c81789c873e881e3a7217fdc5426f2f023b/boostsec/registry_test_action/scanner_detector.py", line 148, in _get_changed_files
-2025-11-10T19:28:04.1945906Z     raise RuntimeError(f"Git command failed: {error_msg}")
-2025-11-10T19:28:04.1946723Z RuntimeError: Git command failed: fatal: ambiguous argument 'main': unknown revision or path not in the working tree.
-2025-11-10T19:28:04.1947507Z Use '--' to separate paths from revisions, like this:
-2025-11-10T19:28:04.1947953Z 'git <command> [<revision>...] -- [<file>...]'
-2025-11-10T19:28:04.1948705Z Error running tests: Git command failed: fatal: ambiguous argument 'main': unknown revision or path not in the working tree.
-2025-11-10T19:28:04.1949477Z Use '--' to separate paths from revisions, like this:
-2025-11-10T19:28:04.1949916Z 'git <command> [<revision>...] -- [<file>...]'
-2025-11-10T19:28:04.2341415Z ##[error]Process completed with exit code 1.
-2025-11-10T19:28:04.2460287Z Post job cleanup.
-2025-11-10T19:28:04.2530944Z Post job cleanup.
-2025-11-10T19:28:04.3477567Z [command]/usr/bin/git version
-2025-11-10T19:28:04.3514169Z git version 2.51.2
-2025-11-10T19:28:04.3563673Z Temporarily overriding HOME='/home/runner/work/_temp/67ef02a9-9f72-44a9-af89-a64f307465cf' before making global git config changes
-2025-11-10T19:28:04.3565019Z Adding repository directory to the temporary git global config as a safe directory
-2025-11-10T19:28:04.3569089Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dev-registry/dev-registry
-2025-11-10T19:28:04.3602909Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
-2025-11-10T19:28:04.3635862Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2025-11-10T19:28:04.3862334Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2025-11-10T19:28:04.3883772Z http.https://github.com/.extraheader
-2025-11-10T19:28:04.3895990Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-2025-11-10T19:28:04.3926483Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2025-11-10T19:28:04.4257256Z Cleaning up orphan processes
+2025-11-11T16:10:00.9760828Z ##[endgroup]
+2025-11-11T16:10:02.2591548Z 2025-11-11 16:10:02,258 - __main__ - INFO - ================================================================================
+2025-11-11T16:10:02.2592486Z 2025-11-11 16:10:02,258 - __main__ - INFO - Scanner Registry Test Action - Starting
+2025-11-11T16:10:02.2593265Z 2025-11-11 16:10:02,258 - __main__ - INFO - ================================================================================
+2025-11-11T16:10:02.2594137Z 2025-11-11 16:10:02,259 - __main__ - INFO - Registry path: /home/runner/work/dev-registry/dev-registry
+2025-11-11T16:10:02.2594977Z 2025-11-11 16:10:02,259 - __main__ - INFO - Base ref: main
+2025-11-11T16:10:02.2595856Z 2025-11-11 16:10:02,259 - __main__ - INFO - Head ref: scanner-setup
+2025-11-11T16:10:02.2596465Z 2025-11-11 16:10:02,259 - __main__ - INFO - Provider: github
+2025-11-11T16:10:02.2597616Z 2025-11-11 16:10:02,259 - __main__ - INFO - Working directory: /home/runner/work/_actions/martin-boost-dev/boostsec-registry-test-action/2fe861851db9c121923d5aacb8e9121f7e655dff
+2025-11-11T16:10:02.2598857Z 2025-11-11 16:10:02,259 - __main__ - INFO - Creating provider...
+2025-11-11T16:10:02.2599514Z 2025-11-11 16:10:02,259 - __main__ - INFO - Provider created: GitHubProvider
+2025-11-11T16:10:02.2600212Z 2025-11-11 16:10:02,259 - __main__ - INFO - Starting test orchestration...
+2025-11-11T16:10:02.2601165Z 2025-11-11 16:10:02,259 - boostsec.registry_test_action.orchestrator - INFO - Orchestrator: Getting registry identifier...
+2025-11-11T16:10:02.2619044Z 2025-11-11 16:10:02,261 - boostsec.registry_test_action.orchestrator - INFO - Registry repository: boostsecurityio/dev-registry
+2025-11-11T16:10:02.2620720Z 2025-11-11 16:10:02,261 - boostsec.registry_test_action.orchestrator - INFO - Orchestrator: Detecting changed scanners...
+2025-11-11T16:10:02.2621926Z 2025-11-11 16:10:02,261 - boostsec.registry_test_action.scanner_detector - INFO - Detecting changed scanners
+2025-11-11T16:10:02.2637806Z 2025-11-11 16:10:02,263 - boostsec.registry_test_action.scanner_detector - INFO - Current git branch: (detached HEAD)
+2025-11-11T16:10:02.2669015Z 2025-11-11 16:10:02,266 - boostsec.registry_test_action.scanner_detector - INFO - Available git refs (first 10): ['5da3d495efb0955900a4be2f86d56944ededc532 refs/remotes/origin/BST-10322-github-sci-scanner', '2623cbe768d51db9fb6f830d100219e8d048980b refs/remotes/origin/BST-10988', '7bf5529254da39dc50b4df9410cc739eec958088 refs/remotes/origin/BST-11911', '0039446107ef5b958ef6529bb40e930431ba3de8 refs/remotes/origin/BST-12096--registry-create-new-secrets-rule-database', 'b3f85ad81d57cb32cbca578c53ae04aba1e77705 refs/remotes/origin/BST-12156-gitleaks-fix', 'b3df83bebf5adbe69c7f5f8f82ef9fcae1db5802 refs/remotes/origin/BST-13818-semgrep-update', 'b27217b7ab9097f9d103abffd0fbf0370a827344 refs/remotes/origin/BST-14065/update_semgrep_scanner_modules', '48a863c8ebd79a6205c2bd92b4bfc555428e13b0 refs/remotes/origin/BST-14587-add-end-of-life-rule-to-registry', '926aea1e053aca52d663cc6aa7381d2b31b07f96 refs/remotes/origin/BST-15235', '4fcda19789105ed450aa4c8325841d24050d1604 refs/remotes/origin/BST-15555']
+2025-11-11T16:10:02.2682396Z 2025-11-11 16:10:02,268 - boostsec.registry_test_action.scanner_detector - WARNING - Base ref 'main' not found: fatal: Needed a single revision
+2025-11-11T16:10:02.2715729Z 2025-11-11 16:10:02,271 - boostsec.registry_test_action.scanner_detector - INFO - Resolved ref 'main' as 'origin/main' to ed66953c2a1882af2a5676facc24eca72e57fff8
+2025-11-11T16:10:02.2746159Z 2025-11-11 16:10:02,274 - boostsec.registry_test_action.scanner_detector - INFO - Resolved ref 'scanner-setup' as 'origin/scanner-setup' to e85ea423129f967de2554dcd491fd31740f401f0
+2025-11-11T16:10:02.2748149Z 2025-11-11 16:10:02,274 - boostsec.registry_test_action.scanner_detector - INFO - Running: git diff --name-only origin/main origin/scanner-setup
+2025-11-11T16:10:02.2770951Z 2025-11-11 16:10:02,276 - boostsec.registry_test_action.scanner_detector - INFO - Found 3 changed files
+2025-11-11T16:10:02.2772096Z 2025-11-11 16:10:02,277 - boostsec.registry_test_action.scanner_detector - INFO - Extracted 1 scanner paths: ['boostsecurityio/trivy-fs']
+2025-11-11T16:10:02.2773389Z 2025-11-11 16:10:02,277 - boostsec.registry_test_action.scanner_detector - INFO - Scanner boostsecurityio/trivy-fs has tests.yaml
+2025-11-11T16:10:02.2774431Z 2025-11-11 16:10:02,277 - boostsec.registry_test_action.scanner_detector - INFO - Found 1 scanners with tests
+2025-11-11T16:10:02.2775304Z 2025-11-11 16:10:02,277 - boostsec.registry_test_action.orchestrator - INFO - Loading test definitions for 1 scanners...
+2025-11-11T16:10:02.2776037Z 2025-11-11 16:10:02,277 - boostsec.registry_test_action.test_loader - INFO - Loading test definition for scanner: boostsecurityio/trivy-fs
+2025-11-11T16:10:02.2788752Z 2025-11-11 16:10:02,278 - boostsec.registry_test_action.test_loader - INFO - Successfully loaded test definition for boostsecurityio/trivy-fs
+2025-11-11T16:10:02.2789937Z 2025-11-11 16:10:02,278 - boostsec.registry_test_action.orchestrator - INFO - Loaded 1 test definitions
+2025-11-11T16:10:02.2790899Z 2025-11-11 16:10:02,278 - boostsec.registry_test_action.orchestrator - INFO - Building test tasks...
+2025-11-11T16:10:02.2791574Z 2025-11-11 16:10:02,278 - boostsec.registry_test_action.orchestrator - INFO - Built 1 test tasks
+2025-11-11T16:10:02.2792121Z 2025-11-11 16:10:02,278 - boostsec.registry_test_action.orchestrator - INFO - Executing tests...
+2025-11-11T16:10:02.2792794Z 2025-11-11 16:10:02,278 - boostsec.registry_test_action.orchestrator - INFO - Dispatching test: boostsecurityio/trivy-fs/Source code scan
+2025-11-11T16:10:08.0007574Z 2025-11-11 16:10:08,000 - boostsec.registry_test_action.orchestrator - INFO - Test dispatched with run_id: 19271554909
+2025-11-11T16:10:08.0009281Z 2025-11-11 16:10:08,000 - boostsec.registry_test_action.orchestrator - INFO - Waiting for test completion: boostsecurityio/trivy-fs/Source code scan
+2025-11-11T16:11:08.7214549Z 2025-11-11 16:11:08,721 - boostsec.registry_test_action.orchestrator - INFO - Test execution completed
+2025-11-11T16:11:08.7215910Z 2025-11-11 16:11:08,721 - boostsec.registry_test_action.orchestrator - INFO - Test result: boostsecurityio/trivy-fs/Source code scan = success
+2025-11-11T16:11:08.7222276Z 2025-11-11 16:11:08,722 - __main__ - INFO - Test orchestration completed with 1 results
+2025-11-11T16:11:08.7223460Z 2025-11-11 16:11:08,722 - __main__ - INFO - ================================================================================
+2025-11-11T16:11:08.7224444Z 2025-11-11 16:11:08,722 - __main__ - INFO - Test Results Summary:
+2025-11-11T16:11:08.7225544Z 2025-11-11 16:11:08,722 - __main__ - INFO - ================================================================================
+2025-11-11T16:11:08.7227006Z 2025-11-11 16:11:08,722 - __main__ - INFO - ✓ boostsecurityio/trivy-fs/Source code scan: success (0.00s)
+2025-11-11T16:11:08.7646494Z ##[error]Unable to process file command 'output' successfully.
+2025-11-11T16:11:08.7647797Z ##[error]Invalid format '  "total": 1,'
+2025-11-11T16:11:08.7833464Z Post job cleanup.
+2025-11-11T16:11:08.7904379Z Post job cleanup.
+2025-11-11T16:11:08.8854240Z [command]/usr/bin/git version
+2025-11-11T16:11:08.8890926Z git version 2.51.2
+2025-11-11T16:11:08.8940097Z Temporarily overriding HOME='/home/runner/work/_temp/09ef32a7-d8f5-4806-a346-d2ebe29b445e' before making global git config changes
+2025-11-11T16:11:08.8941223Z Adding repository directory to the temporary git global config as a safe directory
+2025-11-11T16:11:08.8945757Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dev-registry/dev-registry
+2025-11-11T16:11:08.8979417Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-11-11T16:11:08.9011612Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-11-11T16:11:08.9241637Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-11-11T16:11:08.9262485Z http.https://github.com/.extraheader
+2025-11-11T16:11:08.9274731Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-11-11T16:11:08.9305258Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-11-11T16:11:08.9637664Z Cleaning up orphan processes
