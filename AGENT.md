@@ -689,3 +689,65 @@ make format lint test
 - Support for private test repositories
 - Performance benchmarking and comparison
 - Test result artifacts and logs
+
+## Learnings and Implementation Notes
+
+### Key Decisions Made During Implementation
+
+1. **Repository Format**: Changed from sending full repository URLs to org/repo format
+   - GitHub Actions workflows receive cleaner input: "org/repo" instead of "https://github.com/org/repo.git"
+   - Parsing logic handles both HTTPS and SSH git URL formats
+   - Improves compatibility with various CI/CD provider APIs
+
+2. **Commit SHA Instead of Branch Name**:
+   - Always send exact commit SHA instead of branch name (e.g., "abc123" instead of "scanner-setup")
+   - Prevents race conditions where PR gets updated between dispatch and checkout
+   - Ensures test runner checks out the exact code that was tested
+   - Implemented via `git rev-parse HEAD` in CLI
+
+3. **Multi-line JSON Output Fix**:
+   - GitHub Actions `$GITHUB_OUTPUT` requires heredoc syntax for multi-line values
+   - Changed from `echo "results=$JSON"` to heredoc format with `<<EOF`
+   - Prevents "Invalid format" errors from GitHub Actions
+
+4. **Test Duration from API Timestamps**:
+   - Extract duration from workflow API response timestamps instead of wall-clock time
+   - Use `created_at` and `updated_at` fields from API
+   - Provides accurate test execution time without polling overhead
+   - Handles missing/invalid timestamps gracefully (returns 0.0)
+
+5. **GitHub Actions Environment Assumptions**:
+   - Simplified git status logging - removed confusing warnings about detached HEAD
+   - Changed default `base-ref` from "main" to "origin/main" to match GitHub Actions reality
+   - Changed `head-ref` from required to optional with default "HEAD"
+   - `_resolve_ref()` function automatically handles `origin/` prefix when needed
+
+6. **Logging Cleanup**:
+   - Removed redundant "Orchestrator:" prefixes from log messages
+   - Logger format already includes module name, so prefixes were duplicative
+   - Results in cleaner, more readable logs
+
+### Mistakes to Avoid
+
+1. **Don't use wall-clock time for test duration** - Always extract timing from the CI/CD provider's API response to get accurate execution time without polling overhead.
+
+2. **Don't assume branch refs exist locally** - In GitHub Actions, only remote refs exist (e.g., "origin/main"), so always handle the origin/ prefix.
+
+3. **Don't forget multi-line output handling** - GitHub Actions requires heredoc syntax for multi-line `$GITHUB_OUTPUT` values.
+
+4. **Don't skip commit SHA resolution** - Always use exact commit SHA instead of branch name to prevent race conditions in concurrent environments.
+
+### Testing Strategy
+
+- Maintained 100% code coverage throughout development
+- Used `aioresponses` to mock HTTP calls in provider tests
+- Added comprehensive edge case testing for duration calculation
+- All tests must pass with `make format lint test` before committing
+
+### Action Defaults
+
+The action now works out-of-the-box with sensible defaults:
+- `registry-path`: "." (current directory)
+- `base-ref`: "origin/main" (works with GitHub Actions checkout)
+- `head-ref`: "HEAD" (current commit)
+- Users only need to specify `provider` and `provider-config`
