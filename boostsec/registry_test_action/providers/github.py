@@ -3,9 +3,8 @@
 import asyncio
 import json
 import time
-import uuid
 from collections.abc import Mapping
-from typing import ClassVar, Literal
+from typing import Literal
 
 import aiohttp
 
@@ -17,10 +16,6 @@ from boostsec.registry_test_action.providers.base import PipelineProvider
 
 class GitHubProvider(PipelineProvider):
     """GitHub Actions pipeline provider."""
-
-    # Class-level set to track claimed run IDs across concurrent dispatches
-    _claimed_runs: ClassVar[set[str]] = set()
-    _lock: ClassVar[asyncio.Lock] = asyncio.Lock()
 
     def __init__(self, config: GitHubConfig) -> None:
         """Initialize GitHub provider with configuration."""
@@ -36,7 +31,6 @@ class GitHubProvider(PipelineProvider):
     ) -> str:
         """Dispatch workflow and return run ID."""
         dispatch_time = time.time()
-        correlation_id = str(uuid.uuid4())
 
         async with aiohttp.ClientSession() as session:
             url = (
@@ -48,7 +42,6 @@ class GitHubProvider(PipelineProvider):
                 "Accept": "application/vnd.github+json",
             }
             inputs = {
-                "correlation_id": correlation_id,
                 "scanner_id": scanner_id,
                 "test_name": test.name,
                 "test_type": test.type,
@@ -77,7 +70,7 @@ class GitHubProvider(PipelineProvider):
 
         await asyncio.sleep(5)
 
-        run_id = await self._find_workflow_run(dispatch_time, correlation_id)
+        run_id = await self._find_workflow_run(dispatch_time)
         return run_id
 
     async def poll_status(self, run_id: str) -> tuple[bool, TestResult]:
@@ -133,13 +126,11 @@ class GitHubProvider(PipelineProvider):
 
         return (True, result)
 
-    async def _find_workflow_run(
-        self, dispatch_time: float, correlation_id: str
-    ) -> str:
+    async def _find_workflow_run(self, dispatch_time: float) -> str:
         """Find the workflow run that was just dispatched."""
         for attempt in range(10):
             runs = await self._fetch_recent_runs()
-            run_id = await self._find_matching_run(runs, dispatch_time, correlation_id)
+            run_id = self._find_matching_run(runs, dispatch_time)
 
             if run_id:
                 return run_id
@@ -174,70 +165,31 @@ class GitHubProvider(PipelineProvider):
         runs = data.get("workflow_runs", [])
         return runs if isinstance(runs, list) else []
 
-    def _validate_and_extract_run(
-        self, run: object, dispatch_time: float
-    ) -> tuple[str, float] | None:
-        """Validate run data and extract run ID with time difference.
-
-        Returns tuple of (run_id, time_diff) or None if invalid.
-        """
+    def _find_matching_run(
+        self, runs: list[object], dispatch_time: float
+    ) -> str | None:
+        """Find a run that matches the dispatch time."""
         from datetime import datetime
 
-        if not isinstance(run, dict):
-            return None
+        for run in runs:
+            if not isinstance(run, dict):
+                continue
 
-        if run.get("status") == "completed":
-            return None
+            if run.get("status") == "completed":
+                continue
 
-        run_id_int = run.get("id")
-        if not isinstance(run_id_int, int):
-            return None
+            created_at = run.get("created_at")
+            if not isinstance(created_at, str):
+                continue
 
-        run_id = str(run_id_int)
+            created_time = datetime.fromisoformat(
+                created_at.replace("Z", "+00:00")
+            ).timestamp()
 
-        # Skip already claimed runs
-        if run_id in GitHubProvider._claimed_runs:
-            return None
-
-        created_at = run.get("created_at")
-        if not isinstance(created_at, str):
-            return None
-
-        created_time = datetime.fromisoformat(
-            created_at.replace("Z", "+00:00")
-        ).timestamp()
-
-        # Use tighter time window (10 seconds) to reduce false matches
-        time_diff = abs(created_time - dispatch_time)
-        if time_diff <= 10:
-            return (run_id, time_diff)
-
-        return None
-
-    async def _find_matching_run(
-        self, runs: list[object], dispatch_time: float, correlation_id: str
-    ) -> str | None:
-        """Find a run that matches the dispatch time.
-
-        Uses a class-level lock and claimed runs set to prevent concurrent
-        tests from matching the same run. The correlation_id is passed to
-        the workflow but cannot be verified via GitHub API.
-        """
-        # Build list of candidate runs with their created times
-        candidates: list[tuple[str, float]] = []
-
-        async with GitHubProvider._lock:
-            for run in runs:
-                result = self._validate_and_extract_run(run, dispatch_time)
-                if result:
-                    candidates.append(result)
-
-            # Claim the run with the smallest time difference
-            if candidates:
-                candidates.sort(key=lambda x: x[1])
-                best_run_id = candidates[0][0]
-                GitHubProvider._claimed_runs.add(best_run_id)
-                return best_run_id
+            if created_time >= dispatch_time - 60:
+                run_id = run.get("id")
+                if isinstance(run_id, int):
+                    return str(run_id)
 
         return None
 

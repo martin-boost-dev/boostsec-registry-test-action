@@ -41,9 +41,6 @@ async def test_dispatch_test_success(
     """dispatch_test successfully dispatches workflow and finds run."""
     provider = GitHubProvider(github_config)
 
-    # Clear claimed runs from any previous tests
-    GitHubProvider._claimed_runs.clear()
-
     with aioresponses() as m:
         # Mock workflow dispatch
         m.post(
@@ -52,24 +49,22 @@ async def test_dispatch_test_success(
             status=204,
         )
 
-        # Mock workflow run list (may be called multiple times due to retries)
-        # Run created 5 seconds after dispatch
-        for _ in range(10):
-            m.get(
-                f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
-                "actions/runs?per_page=5",
-                payload={
-                    "workflow_runs": [
-                        {
-                            "id": 123456,
-                            "status": "in_progress",
-                            "created_at": "2099-01-01T12:00:05Z",
-                        }
-                    ]
-                },
-            )
+        # Mock workflow run list
+        m.get(
+            f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
+            "actions/runs?per_page=5",
+            payload={
+                "workflow_runs": [
+                    {
+                        "id": 123456,
+                        "status": "in_progress",
+                        "created_at": "2099-01-01T12:00:00Z",
+                    }
+                ]
+            },
+        )
 
-        with patch("asyncio.sleep"), patch("time.time", return_value=4070952000.0):
+        with patch("asyncio.sleep"):
             run_id = await provider.dispatch_test(
                 "boostsecurityio/trivy-fs",
                 test_definition,
@@ -95,32 +90,27 @@ async def test_dispatch_test_with_scan_configs(github_config: GitHubConfig) -> N
 
     provider = GitHubProvider(github_config)
 
-    # Clear claimed runs from any previous tests
-    GitHubProvider._claimed_runs.clear()
-
     with aioresponses() as m:
         m.post(
             f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
             f"actions/workflows/{github_config.workflow_id}/dispatches",
             status=204,
         )
-        # Run created 5 seconds after dispatch
-        for _ in range(10):
-            m.get(
-                f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
-                "actions/runs?per_page=5",
-                payload={
-                    "workflow_runs": [
-                        {
-                            "id": 123456,
-                            "status": "in_progress",
-                            "created_at": "2099-01-01T12:00:05Z",
-                        }
-                    ]
-                },
-            )
+        m.get(
+            f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
+            "actions/runs?per_page=5",
+            payload={
+                "workflow_runs": [
+                    {
+                        "id": 123456,
+                        "status": "in_progress",
+                        "created_at": "2099-01-01T12:00:00Z",
+                    }
+                ]
+            },
+        )
 
-        with patch("asyncio.sleep"), patch("time.time", return_value=4070952000.0):
+        with patch("asyncio.sleep"):
             run_id = await provider.dispatch_test(
                 "boostsecurityio/trivy-fs",
                 test_with_configs,
@@ -317,9 +307,6 @@ async def test_find_workflow_run_not_found(github_config: GitHubConfig) -> None:
     """_find_workflow_run raises RuntimeError when run cannot be found."""
     provider = GitHubProvider(github_config)
 
-    # Clear claimed runs from any previous tests
-    GitHubProvider._claimed_runs.clear()
-
     with aioresponses() as m:
         # Mock empty workflow runs list for all attempts
         for _ in range(10):
@@ -333,9 +320,7 @@ async def test_find_workflow_run_not_found(github_config: GitHubConfig) -> None:
             with pytest.raises(
                 RuntimeError, match="Could not find dispatched workflow run"
             ):
-                await provider._find_workflow_run(
-                    dispatch_time=0.0, correlation_id="test-uuid"
-                )
+                await provider._find_workflow_run(dispatch_time=0.0)
 
 
 async def test_fetch_recent_runs_api_error(github_config: GitHubConfig) -> None:
@@ -360,68 +345,16 @@ async def test_find_matching_run_skips_invalid_runs(
     """_find_matching_run handles invalid run data gracefully."""
     provider = GitHubProvider(github_config)
 
-    # Clear claimed runs from any previous tests
-    GitHubProvider._claimed_runs.clear()
-
-    # Create a run at 2099-01-01T12:00:05Z (5 seconds after dispatch)
-    dispatch_time = 4070952000.0  # 2099-01-01T12:00:00Z
-
     runs: list[object] = [
         "not a dict",  # Non-dict run
         {"status": "completed", "id": 111},  # Completed run
-        {"status": "in_progress", "id": "not-an-int"},  # Non-integer ID
+        {"status": "in_progress", "created_at": 123},  # Non-string created_at
         {
             "status": "in_progress",
-            "created_at": 123,
-            "id": 222,
-        },  # Non-string created_at
-        {
-            "status": "in_progress",
-            "created_at": "2099-01-01T11:59:00Z",
-            "id": 333,
-        },  # Outside time window (60 seconds before)
-        {
-            "status": "in_progress",
-            "created_at": "2099-01-01T12:00:05Z",
+            "created_at": "2099-01-01T12:00:00Z",
             "id": 123456,
         },  # Valid run
     ]
 
-    run_id = await provider._find_matching_run(
-        runs, dispatch_time=dispatch_time, correlation_id="test-uuid"
-    )
-    assert run_id == "123456"
-
-
-async def test_find_matching_run_skips_claimed_runs(
-    github_config: GitHubConfig,
-) -> None:
-    """_find_matching_run skips runs that have already been claimed."""
-    provider = GitHubProvider(github_config)
-
-    # Clear claimed runs from any previous tests
-    GitHubProvider._claimed_runs.clear()
-
-    # Pre-claim a run
-    GitHubProvider._claimed_runs.add("999999")
-
-    # Create a run at 2099-01-01T12:00:05Z (5 seconds after dispatch)
-    dispatch_time = 4070952000.0  # 2099-01-01T12:00:00Z
-
-    runs: list[object] = [
-        {
-            "status": "in_progress",
-            "created_at": "2099-01-01T12:00:03Z",
-            "id": 999999,
-        },  # Already claimed (closer match)
-        {
-            "status": "in_progress",
-            "created_at": "2099-01-01T12:00:05Z",
-            "id": 123456,
-        },  # Valid unclaimed run (further but still within window)
-    ]
-
-    run_id = await provider._find_matching_run(
-        runs, dispatch_time=dispatch_time, correlation_id="test-uuid"
-    )
+    run_id = provider._find_matching_run(runs, dispatch_time=0.0)
     assert run_id == "123456"
