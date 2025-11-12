@@ -59,6 +59,7 @@ async def test_dispatch_test_success(
                         "id": 123456,
                         "status": "in_progress",
                         "created_at": "2099-01-01T12:00:00Z",
+                        "display_title": "[boostsecurityio/trivy-fs] smoke test",
                     }
                 ]
             },
@@ -105,6 +106,7 @@ async def test_dispatch_test_with_scan_configs(github_config: GitHubConfig) -> N
                         "id": 123456,
                         "status": "in_progress",
                         "created_at": "2099-01-01T12:00:00Z",
+                        "display_title": "[boostsecurityio/trivy-fs] config test",
                     }
                 ]
             },
@@ -320,7 +322,11 @@ async def test_find_workflow_run_not_found(github_config: GitHubConfig) -> None:
             with pytest.raises(
                 RuntimeError, match="Could not find dispatched workflow run"
             ):
-                await provider._find_workflow_run(dispatch_time=0.0)
+                await provider._find_workflow_run(
+                    dispatch_time=0.0,
+                    scanner_id="boostsecurityio/trivy-fs",
+                    test_name="smoke test",
+                )
 
 
 async def test_fetch_recent_runs_api_error(github_config: GitHubConfig) -> None:
@@ -348,13 +354,41 @@ async def test_find_matching_run_skips_invalid_runs(
     runs: list[object] = [
         "not a dict",  # Non-dict run
         {"status": "completed", "id": 111},  # Completed run
-        {"status": "in_progress", "created_at": 123},  # Non-string created_at
         {
             "status": "in_progress",
+            "display_title": 123,
+            "id": 222,
+        },  # Non-string display_title
+        {
+            "status": "in_progress",
+            "display_title": "[other-scanner/tool] test",
+            "created_at": "2099-01-01T12:00:00Z",
+            "id": 333,
+        },  # Wrong scanner_id
+        {
+            "status": "in_progress",
+            "display_title": "[boostsecurityio/trivy-fs] other test",
+            "created_at": "2099-01-01T12:00:00Z",
+            "id": 444,
+        },  # Wrong test_name
+        {
+            "status": "in_progress",
+            "display_title": "[boostsecurityio/trivy-fs] smoke test",
+            "created_at": 123,
+            "id": 555,
+        },  # Non-string created_at
+        {
+            "status": "in_progress",
+            "display_title": "[boostsecurityio/trivy-fs] smoke test",
             "created_at": "2099-01-01T12:00:00Z",
             "id": 123456,
         },  # Valid run
     ]
 
-    run_id = provider._find_matching_run(runs, dispatch_time=0.0)
+    run_id = provider._find_matching_run(
+        runs,
+        dispatch_time=0.0,
+        scanner_id="boostsecurityio/trivy-fs",
+        test_name="smoke test",
+    )
     assert run_id == "123456"

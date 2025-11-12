@@ -70,7 +70,7 @@ class GitHubProvider(PipelineProvider):
 
         await asyncio.sleep(5)
 
-        run_id = await self._find_workflow_run(dispatch_time)
+        run_id = await self._find_workflow_run(dispatch_time, scanner_id, test.name)
         return run_id
 
     async def poll_status(self, run_id: str) -> tuple[bool, TestResult]:
@@ -126,11 +126,16 @@ class GitHubProvider(PipelineProvider):
 
         return (True, result)
 
-    async def _find_workflow_run(self, dispatch_time: float) -> str:
-        """Find the workflow run that was just dispatched."""
+    async def _find_workflow_run(
+        self, dispatch_time: float, scanner_id: str, test_name: str
+    ) -> str:
+        """Find the workflow run that was just dispatched.
+
+        Matches runs by time window and scanner_id in display_title.
+        """
         for attempt in range(10):
             runs = await self._fetch_recent_runs()
-            run_id = self._find_matching_run(runs, dispatch_time)
+            run_id = self._find_matching_run(runs, dispatch_time, scanner_id, test_name)
 
             if run_id:
                 return run_id
@@ -165,20 +170,45 @@ class GitHubProvider(PipelineProvider):
         runs = data.get("workflow_runs", [])
         return runs if isinstance(runs, list) else []
 
+    def _is_matching_run(self, run: object, scanner_id: str, test_name: str) -> bool:
+        """Check if run matches scanner_id and test_name in display_title."""
+        if not isinstance(run, dict):
+            return False
+
+        if run.get("status") == "completed":
+            return False
+
+        display_title = run.get("display_title")
+        if not isinstance(display_title, str):
+            return False
+
+        if scanner_id not in display_title:
+            return False
+
+        if test_name not in display_title:
+            return False
+
+        return True
+
     def _find_matching_run(
-        self, runs: list[object], dispatch_time: float
+        self, runs: list[object], dispatch_time: float, scanner_id: str, test_name: str
     ) -> str | None:
-        """Find a run that matches the dispatch time."""
+        """Find a run that matches the dispatch time and scanner_id.
+
+        Matches by:
+        1. Time window (within 60 seconds of dispatch)
+        2. Scanner ID in display_title
+        3. Test name in display_title (for additional precision)
+        """
         from datetime import datetime
 
         for run in runs:
-            if not isinstance(run, dict):
+            if not self._is_matching_run(run, scanner_id, test_name):
                 continue
 
-            if run.get("status") == "completed":
-                continue
-
-            created_at = run.get("created_at")
+            # At this point, run is guaranteed to be a dict by _is_matching_run
+            # Check time window
+            created_at = run.get("created_at")  # type: ignore[attr-defined]
             if not isinstance(created_at, str):
                 continue
 
@@ -187,7 +217,7 @@ class GitHubProvider(PipelineProvider):
             ).timestamp()
 
             if created_time >= dispatch_time - 60:
-                run_id = run.get("id")
+                run_id = run.get("id")  # type: ignore[attr-defined]
                 if isinstance(run_id, int):
                     return str(run_id)
 
