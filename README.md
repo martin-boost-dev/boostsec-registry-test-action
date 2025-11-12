@@ -4,6 +4,17 @@
 
 Automated testing system for validating scanner updates across multiple CI/CD platforms (GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines).
 
+## Quick Start
+
+**📚 For detailed setup instructions, see [CONFIGURATION.md](./CONFIGURATION.md)**
+
+This guide covers:
+- ✅ Source repository setup (GitHub workflow configuration)
+- ✅ GitLab test runner setup (token creation, .gitlab-ci.yml)
+- ✅ GitHub test runner setup (PAT creation, workflow_dispatch)
+- ✅ Scanner repository structure (tests.yaml format)
+- ✅ Troubleshooting common issues
+
 ## Overview
 
 This action runs when a scanner is modified in the scanner-registry repository. It:
@@ -98,14 +109,18 @@ The action uses a JSON configuration string for provider-specific settings. Each
 ```json
 {
   "token": "your-gitlab-token",
-  "project_id": "12345"
+  "project_id": "12345",
+  "ref": "main"
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `token` | string | Yes | GitLab Personal Access Token with `api, write_repository` scopes |
-| `project_id` | string | Yes | GitLab project ID for the runner repository |
+| `token` | string | Yes | GitLab Project Access Token with Maintainer role and `api` scope |
+| `project_id` | string | Yes | GitLab project ID (numeric) or full path (e.g., "group/subgroup/project") |
+| `ref` | string | No | Branch to run tests on (default: "main") |
+
+**⚠️ Important**: Must use **Project Access Token** with **Maintainer role** to run pipelines on protected branches. See [CONFIGURATION.md](./CONFIGURATION.md#gitlab-test-runner-setup) for detailed token setup.
 
 #### Azure DevOps
 ```json
@@ -184,7 +199,8 @@ jobs:
     provider-config: |
       {
         "token": "${{ secrets.GITLAB_TOKEN }}",
-        "project_id": "${{ secrets.GITLAB_PROJECT_ID }}"
+        "project_id": "your-group/test-runner",
+        "ref": "main"
       }
 ```
 
