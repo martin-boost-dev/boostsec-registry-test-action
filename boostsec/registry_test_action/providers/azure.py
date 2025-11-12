@@ -1,5 +1,6 @@
 """Azure DevOps Pipelines provider implementation."""
 
+import base64
 import json
 from collections.abc import Mapping
 from typing import Literal
@@ -19,6 +20,10 @@ class AzureDevOpsProvider(PipelineProvider):
         """Initialize Azure DevOps provider with configuration."""
         self.config = config
         self.base_url = "https://dev.azure.com"
+        # Azure uses Basic auth with empty username and PAT as password
+        auth_string = f":{config.token}"
+        auth_bytes = auth_string.encode("ascii")
+        self._auth_header = f"Basic {base64.b64encode(auth_bytes).decode('ascii')}"
 
     async def dispatch_test(
         self,
@@ -34,7 +39,7 @@ class AzureDevOpsProvider(PipelineProvider):
                 f"_apis/pipelines/{self.config.pipeline_id}/runs?api-version=7.1"
             )
             headers = {
-                "Authorization": f"Basic {self.config.token}",
+                "Authorization": self._auth_header,
                 "Content-Type": "application/json",
             }
             template_params = {
@@ -80,7 +85,7 @@ class AzureDevOpsProvider(PipelineProvider):
                 "?api-version=7.1"
             )
             headers = {
-                "Authorization": f"Basic {self.config.token}",
+                "Authorization": self._auth_header,
             }
 
             async with session.get(url, headers=headers) as response:
