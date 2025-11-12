@@ -32,18 +32,15 @@ class GitLabProvider(PipelineProvider):
         registry_ref: str,
         registry_repo: str,
     ) -> str:
-        """Dispatch pipeline using trigger token and return pipeline ID."""
+        """Dispatch pipeline using project access token and return pipeline ID."""
         async with aiohttp.ClientSession() as session:
-            url = (
-                f"{self.base_url}/projects/{self._encoded_project_id}/trigger/pipeline"
-            )
+            url = f"{self.base_url}/projects/{self._encoded_project_id}/pipeline"
+            headers = {
+                "PRIVATE-TOKEN": self.config.token,
+                "Content-Type": "application/json",
+            }
 
-            # Use FormData for trigger tokens
-            data = aiohttp.FormData()
-            data.add_field("token", self.config.token)
-            data.add_field("ref", self.config.ref)
-
-            # Add variables as form fields
+            # Build variables list
             variables = [
                 ("SCANNER_ID", scanner_id),
                 ("TEST_NAME", test.name),
@@ -59,10 +56,13 @@ class GitLabProvider(PipelineProvider):
             if test.scan_configs is not None:
                 variables.append(("SCAN_CONFIGS", json.dumps(test.scan_configs)))
 
-            for key, value in variables:
-                data.add_field(f"variables[{key}]", value)
+            # Format as JSON payload
+            payload = {
+                "ref": self.config.ref,
+                "variables": [{"key": key, "value": value} for key, value in variables],
+            }
 
-            async with session.post(url, data=data) as response:
+            async with session.post(url, headers=headers, json=payload) as response:
                 if response.status != 201:
                     text = await response.text()
                     raise RuntimeError(

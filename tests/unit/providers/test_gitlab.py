@@ -35,12 +35,12 @@ def test_definition() -> Test:
 async def test_dispatch_test_success(
     gitlab_config: GitLabConfig, test_definition: Test
 ) -> None:
-    """dispatch_test successfully creates pipeline using trigger token."""
+    """dispatch_test successfully creates pipeline using project access token."""
     provider = GitLabProvider(gitlab_config)
 
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
             status=201,
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
@@ -77,7 +77,7 @@ async def test_dispatch_test_with_scan_configs(gitlab_config: GitLabConfig) -> N
 
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
             status=201,
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
@@ -100,7 +100,7 @@ async def test_dispatch_test_failure(
 
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
             status=400,
             body="Bad Request",
         )
@@ -122,7 +122,7 @@ async def test_dispatch_test_missing_pipeline_id(
 
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
             status=201,
             payload={"web_url": "https://gitlab.com/project/pipelines/789"},
         )
@@ -145,7 +145,7 @@ async def test_poll_status_running(
     # First dispatch to set up context
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
             status=201,
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
@@ -185,7 +185,7 @@ async def test_poll_status_completed_success(
     # First dispatch to set up context
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
             status=201,
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
@@ -225,7 +225,7 @@ async def test_poll_status_completed_failure(
     # First dispatch to set up context
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
             status=201,
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
@@ -302,7 +302,7 @@ async def test_dispatch_test_with_project_path(test_definition: Test) -> None:
     with aioresponses() as m:
         # Mock with URL-encoded path
         m.post(
-            "https://gitlab.com/api/v4/projects/boostsecurityio%2Fmartin%2Fboostsec-registry-test-runner/trigger/pipeline",
+            "https://gitlab.com/api/v4/projects/boostsecurityio%2Fmartin%2Fboostsec-registry-test-runner/pipeline",
             status=201,
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
