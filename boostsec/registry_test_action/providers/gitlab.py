@@ -19,6 +19,8 @@ class GitLabProvider(PipelineProvider):
         """Initialize GitLab provider with configuration."""
         self.config = config
         self.base_url = "https://gitlab.com/api/v4"
+        # Store test context for each pipeline to populate TestResult correctly
+        self._pipeline_context: dict[str, tuple[str, str]] = {}
 
     async def dispatch_test(
         self,
@@ -27,52 +29,59 @@ class GitLabProvider(PipelineProvider):
         registry_ref: str,
         registry_repo: str,
     ) -> str:
-        """Dispatch pipeline and return pipeline ID."""
+        """Dispatch pipeline using trigger token and return pipeline ID."""
         async with aiohttp.ClientSession() as session:
-            url = f"{self.base_url}/projects/{self.config.project_id}/pipeline"
-            headers = {
-                "PRIVATE-TOKEN": self.config.token,
-                "Content-Type": "application/json",
-            }
+            url = f"{self.base_url}/projects/{self.config.project_id}/trigger/pipeline"
+
+            # Use FormData for trigger tokens
+            data = aiohttp.FormData()
+            data.add_field("token", self.config.token)
+            data.add_field("ref", self.config.ref)
+
+            # Add variables as form fields
             variables = [
-                {"key": "SCANNER_ID", "value": scanner_id},
-                {"key": "TEST_NAME", "value": test.name},
-                {"key": "TEST_TYPE", "value": test.type},
-                {"key": "SOURCE_URL", "value": test.source.url},
-                {"key": "SOURCE_REF", "value": test.source.ref},
-                {"key": "REGISTRY_REF", "value": registry_ref},
-                {"key": "REGISTRY_REPO", "value": registry_repo},
-                {"key": "SCAN_PATHS", "value": json.dumps(test.scan_paths)},
-                {"key": "TIMEOUT", "value": test.timeout},
+                ("SCANNER_ID", scanner_id),
+                ("TEST_NAME", test.name),
+                ("TEST_TYPE", test.type),
+                ("SOURCE_URL", test.source.url),
+                ("SOURCE_REF", test.source.ref),
+                ("REGISTRY_REF", registry_ref),
+                ("REGISTRY_REPO", registry_repo),
+                ("SCAN_PATHS", json.dumps(test.scan_paths)),
+                ("TIMEOUT", test.timeout),
             ]
 
             if test.scan_configs is not None:
-                variables.append(
-                    {"key": "SCAN_CONFIGS", "value": json.dumps(test.scan_configs)}
-                )
+                variables.append(("SCAN_CONFIGS", json.dumps(test.scan_configs)))
 
-            payload = {
-                "ref": self.config.ref,
-                "variables": variables,
-            }
+            for key, value in variables:
+                data.add_field(f"variables[{key}]", value)
 
-            async with session.post(url, headers=headers, json=payload) as response:
+            async with session.post(url, data=data) as response:
                 if response.status != 201:
                     text = await response.text()
                     raise RuntimeError(
                         f"Failed to create pipeline: {response.status} {text}"
                     )
 
-                data: Mapping[str, object] = await response.json()
+                response_data: Mapping[str, object] = await response.json()
 
-        pipeline_id = data.get("id")
+        pipeline_id = response_data.get("id")
         if not isinstance(pipeline_id, int):
             raise RuntimeError("Pipeline ID not found in response")
 
-        return str(pipeline_id)
+        pipeline_id_str = str(pipeline_id)
+
+        # Store test context for later use in poll_status
+        self._pipeline_context[pipeline_id_str] = (scanner_id, test.name)
+
+        return pipeline_id_str
 
     async def poll_status(self, run_id: str) -> tuple[bool, TestResult]:
         """Check if pipeline is complete and get result."""
+        # Retrieve stored test context
+        scanner, test_name = self._pipeline_context.get(run_id, ("unknown", "unknown"))
+
         async with aiohttp.ClientSession() as session:
             url = (
                 f"{self.base_url}/projects/{self.config.project_id}/pipelines/{run_id}"
@@ -104,8 +113,8 @@ class GitLabProvider(PipelineProvider):
         if not is_complete:
             result = TestResult(
                 provider="gitlab",
-                scanner="unknown",
-                test_name="unknown",
+                scanner=scanner,
+                test_name=test_name,
                 status="error",
                 duration=0.0,
                 run_url=web_url,
@@ -116,8 +125,8 @@ class GitLabProvider(PipelineProvider):
 
         result = TestResult(
             provider="gitlab",
-            scanner="unknown",
-            test_name="unknown",
+            scanner=scanner,
+            test_name=test_name,
             status=test_status,
             duration=0.0,
             run_url=web_url,

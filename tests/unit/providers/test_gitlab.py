@@ -35,12 +35,12 @@ def test_definition() -> Test:
 async def test_dispatch_test_success(
     gitlab_config: GitLabConfig, test_definition: Test
 ) -> None:
-    """dispatch_test successfully creates pipeline."""
+    """dispatch_test successfully creates pipeline using trigger token."""
     provider = GitLabProvider(gitlab_config)
 
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
             status=201,
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
@@ -53,6 +53,11 @@ async def test_dispatch_test_success(
         )
 
     assert pipeline_id == "789"
+    # Verify context was stored
+    assert provider._pipeline_context["789"] == (
+        "boostsecurityio/trivy-fs",
+        "smoke test",
+    )
 
 
 async def test_dispatch_test_with_scan_configs(gitlab_config: GitLabConfig) -> None:
@@ -72,7 +77,7 @@ async def test_dispatch_test_with_scan_configs(gitlab_config: GitLabConfig) -> N
 
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
             status=201,
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
@@ -95,7 +100,7 @@ async def test_dispatch_test_failure(
 
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
             status=400,
             body="Bad Request",
         )
@@ -117,7 +122,7 @@ async def test_dispatch_test_missing_pipeline_id(
 
     with aioresponses() as m:
         m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
             status=201,
             payload={"web_url": "https://gitlab.com/project/pipelines/789"},
         )
@@ -131,10 +136,27 @@ async def test_dispatch_test_missing_pipeline_id(
             )
 
 
-async def test_poll_status_running(gitlab_config: GitLabConfig) -> None:
+async def test_poll_status_running(
+    gitlab_config: GitLabConfig, test_definition: Test
+) -> None:
     """poll_status returns not complete when pipeline is running."""
     provider = GitLabProvider(gitlab_config)
 
+    # First dispatch to set up context
+    with aioresponses() as m:
+        m.post(
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
+            status=201,
+            payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
+        )
+        await provider.dispatch_test(
+            "boostsecurityio/trivy-fs",
+            test_definition,
+            "main",
+            "test/registry",
+        )
+
+    # Now poll status
     with aioresponses() as m:
         m.get(
             f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
@@ -149,13 +171,32 @@ async def test_poll_status_running(gitlab_config: GitLabConfig) -> None:
 
     assert is_complete is False
     assert result.provider == "gitlab"
+    assert result.scanner == "boostsecurityio/trivy-fs"
+    assert result.test_name == "smoke test"
     assert result.status == "error"
 
 
-async def test_poll_status_completed_success(gitlab_config: GitLabConfig) -> None:
+async def test_poll_status_completed_success(
+    gitlab_config: GitLabConfig, test_definition: Test
+) -> None:
     """poll_status returns complete with success status."""
     provider = GitLabProvider(gitlab_config)
 
+    # First dispatch to set up context
+    with aioresponses() as m:
+        m.post(
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
+            status=201,
+            payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
+        )
+        await provider.dispatch_test(
+            "boostsecurityio/trivy-fs",
+            test_definition,
+            "main",
+            "test/registry",
+        )
+
+    # Now poll status
     with aioresponses() as m:
         m.get(
             f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
@@ -171,12 +212,31 @@ async def test_poll_status_completed_success(gitlab_config: GitLabConfig) -> Non
     assert is_complete is True
     assert result.status == "success"
     assert result.provider == "gitlab"
+    assert result.scanner == "boostsecurityio/trivy-fs"
+    assert result.test_name == "smoke test"
 
 
-async def test_poll_status_completed_failure(gitlab_config: GitLabConfig) -> None:
+async def test_poll_status_completed_failure(
+    gitlab_config: GitLabConfig, test_definition: Test
+) -> None:
     """poll_status returns complete with failure status."""
     provider = GitLabProvider(gitlab_config)
 
+    # First dispatch to set up context
+    with aioresponses() as m:
+        m.post(
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/trigger/pipeline",
+            status=201,
+            payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
+        )
+        await provider.dispatch_test(
+            "boostsecurityio/trivy-fs",
+            test_definition,
+            "main",
+            "test/registry",
+        )
+
+    # Now poll status
     with aioresponses() as m:
         m.get(
             f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
@@ -191,6 +251,8 @@ async def test_poll_status_completed_failure(gitlab_config: GitLabConfig) -> Non
 
     assert is_complete is True
     assert result.status == "failure"
+    assert result.scanner == "boostsecurityio/trivy-fs"
+    assert result.test_name == "smoke test"
 
 
 async def test_poll_status_api_error(gitlab_config: GitLabConfig) -> None:
