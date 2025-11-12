@@ -281,3 +281,37 @@ async def test_map_status_all_statuses(gitlab_config: GitLabConfig) -> None:
     assert provider._map_status("skipped") == "error"
     assert provider._map_status("manual") == "error"
     assert provider._map_status("unknown") == "error"
+
+
+async def test_dispatch_test_with_project_path(test_definition: Test) -> None:
+    """dispatch_test URL-encodes project path for API calls."""
+    # Use project path instead of numeric ID
+    config = GitLabConfig(
+        token="glpat-test123",
+        project_id="boostsecurityio/martin/boostsec-registry-test-runner",
+        ref="main",
+    )
+    provider = GitLabProvider(config)
+
+    # Verify project_id is URL-encoded
+    assert (
+        provider._encoded_project_id
+        == "boostsecurityio%2Fmartin%2Fboostsec-registry-test-runner"
+    )
+
+    with aioresponses() as m:
+        # Mock with URL-encoded path
+        m.post(
+            "https://gitlab.com/api/v4/projects/boostsecurityio%2Fmartin%2Fboostsec-registry-test-runner/trigger/pipeline",
+            status=201,
+            payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
+        )
+
+        pipeline_id = await provider.dispatch_test(
+            "boostsecurityio/trivy-fs",
+            test_definition,
+            "main",
+            "test/registry",
+        )
+
+    assert pipeline_id == "789"

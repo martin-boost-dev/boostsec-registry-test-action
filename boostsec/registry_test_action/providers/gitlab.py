@@ -3,6 +3,7 @@
 import json
 from collections.abc import Mapping
 from typing import Literal
+from urllib.parse import quote
 
 import aiohttp
 
@@ -21,6 +22,8 @@ class GitLabProvider(PipelineProvider):
         self.base_url = "https://gitlab.com/api/v4"
         # Store test context for each pipeline to populate TestResult correctly
         self._pipeline_context: dict[str, tuple[str, str]] = {}
+        # URL-encode project_id to support both numeric IDs and paths
+        self._encoded_project_id = quote(str(config.project_id), safe="")
 
     async def dispatch_test(
         self,
@@ -31,7 +34,9 @@ class GitLabProvider(PipelineProvider):
     ) -> str:
         """Dispatch pipeline using trigger token and return pipeline ID."""
         async with aiohttp.ClientSession() as session:
-            url = f"{self.base_url}/projects/{self.config.project_id}/trigger/pipeline"
+            url = (
+                f"{self.base_url}/projects/{self._encoded_project_id}/trigger/pipeline"
+            )
 
             # Use FormData for trigger tokens
             data = aiohttp.FormData()
@@ -84,7 +89,8 @@ class GitLabProvider(PipelineProvider):
 
         async with aiohttp.ClientSession() as session:
             url = (
-                f"{self.base_url}/projects/{self.config.project_id}/pipelines/{run_id}"
+                f"{self.base_url}/projects/{self._encoded_project_id}/"
+                f"pipelines/{run_id}"
             )
             headers = {
                 "PRIVATE-TOKEN": self.config.token,
