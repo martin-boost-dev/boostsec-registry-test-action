@@ -125,31 +125,37 @@ Quick reference for configuring authentication tokens for each CI/CD provider.
 
 | Property | Value |
 |----------|-------|
-| **Token Type** | App Password |
-| **Permissions** | `repository: write`, `pipelines: write` |
+| **Token Type** | Repository Access Token |
+| **Permissions** | `Pipelines: Read`, `Pipelines: Write` |
 
 ### How to Create
 
-1. Go to **Personal settings → App passwords**
-2. Click **Create app password**
-3. Configure:
-   - **Label**: `Registry Test Runner`
+1. Go to the test runner repository in Bitbucket
+2. Navigate to **Repository Settings → Security → Access tokens**
+3. Click **Create Repository Access Token**
+4. Configure:
+   - **Token name**: `Registry Test Runner`
    - **Permissions**:
-     - **Repositories**: Write
+     - **Pipelines**: Read
      - **Pipelines**: Write
-4. Click **Create**
-5. Copy password immediately
+5. Click **Create**
+6. Copy token immediately (shown only once)
+
+**Official guide**: [Create a repository access token](https://support.atlassian.com/bitbucket-cloud/docs/create-a-repository-access-token/)
 
 ### Configuration Format
 
 ```json
 {
-  "username": "your-bitbucket-username",
-  "app_password": "xxxxxxxxxxxxxxxxxxxxx",
+  "username": "your-email@example.com",
+  "api_token": "xxxxxxxxxxxxxxxxxxxxx",
   "workspace": "your-workspace",
-  "repo_slug": "test-runner-repo"
+  "repo_slug": "test-runner-repo",
+  "branch": "main"
 }
 ```
+
+**Note**: `username` should be the email address associated with your Bitbucket account.
 
 ---
 
@@ -185,6 +191,7 @@ Quick reference for configuring authentication tokens for each CI/CD provider.
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| 401 Unauthorized | Invalid app password | Generate new app password |
-| 403 Forbidden | Missing pipeline write permission | Update app password permissions |
+| 401 Unauthorized | Invalid or expired access token | Generate new repository access token |
+| 403 Forbidden | Missing pipelines read/write permissions | Update token permissions |
 | 404 Not Found | Incorrect workspace/repo_slug | Verify repository details |
+| Pipeline not triggered | Custom pipeline selector not found | Verify repository has `test-scanner` custom pipeline |
