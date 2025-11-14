@@ -20,8 +20,8 @@ class BitbucketProvider(PipelineProvider):
         """Initialize Bitbucket provider with configuration."""
         self.config = config
         self.base_url = "https://api.bitbucket.org/2.0"
-        # Store test context for each pipeline to populate TestResult correctly
-        self._pipeline_context: dict[str, tuple[str, str]] = {}
+        # Store test context and URLs for each pipeline to populate TestResult correctly
+        self._pipeline_context: dict[str, tuple[str, str, str]] = {}
         # Bitbucket uses Basic auth with username:api_token
         auth_string = f"{config.username}:{config.api_token}"
         auth_bytes = auth_string.encode("utf-8")
@@ -89,20 +89,33 @@ class BitbucketProvider(PipelineProvider):
 
         pipeline_id = pipeline_uuid.strip("{}")
 
-        # Store test context for later use in poll_status
-        self._pipeline_context[pipeline_id] = (scanner_id, test.name)
+        # Construct pipeline URL
+        # Pattern: https://bitbucket.org/{workspace}/{repo_slug}/pipelines/results/{run_id}
+        # The run_id in the URL is a sequential number from build_number
+        build_number = data.get("build_number")
+        if isinstance(build_number, int):
+            run_url = (
+                f"https://bitbucket.org/{self.config.workspace}/"
+                f"{self.config.repo_slug}/pipelines/results/{build_number}"
+            )
+        else:
+            run_url = ""
+
+        # Store test context and URL for later use in poll_status
+        self._pipeline_context[pipeline_id] = (scanner_id, test.name, run_url)
 
         return pipeline_id
 
     async def poll_status(self, run_id: str) -> tuple[bool, TestResult]:
         """Check if pipeline is complete and get result."""
-        # Retrieve stored test context
-        scanner, test_name = self._pipeline_context.get(run_id, ("unknown", "unknown"))
+        # Retrieve stored test context and URL
+        scanner, test_name, run_url = self._pipeline_context.get(
+            run_id, ("unknown", "unknown", "")
+        )
 
         data = await self._fetch_pipeline_status(run_id)
 
         state_info = data.get("state")
-        web_url = self._extract_web_url(data)
 
         if not isinstance(state_info, dict):
             result = TestResult(
@@ -111,7 +124,7 @@ class BitbucketProvider(PipelineProvider):
                 test_name=test_name,
                 status="error",
                 duration=0.0,
-                run_url=web_url,
+                run_url=run_url,
             )
             return (False, result)
 
@@ -129,7 +142,7 @@ class BitbucketProvider(PipelineProvider):
                 test_name=test_name,
                 status="error",
                 duration=0.0,
-                run_url=web_url,
+                run_url=run_url,
             )
             return (False, result)
 
@@ -148,7 +161,7 @@ class BitbucketProvider(PipelineProvider):
             test_name=test_name,
             status=test_status,
             duration=0.0,
-            run_url=web_url,
+            run_url=run_url,
         )
 
         return (True, result)
@@ -174,17 +187,6 @@ class BitbucketProvider(PipelineProvider):
                 data: Mapping[str, object] = await response.json()
 
         return data
-
-    def _extract_web_url(self, data: Mapping[str, object]) -> str:
-        """Extract web URL from pipeline data."""
-        web_url = ""
-        if isinstance(data.get("links"), dict):
-            links = data["links"]
-            if isinstance(links, dict) and isinstance(links.get("html"), dict):
-                html = links["html"]
-                if isinstance(html, dict):
-                    web_url = str(html.get("href", ""))
-        return web_url
 
     def _map_result(
         self, result: str
