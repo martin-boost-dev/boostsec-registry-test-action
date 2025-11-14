@@ -380,7 +380,7 @@ def test_main_bitbucket_provider() -> None:
     config_json = json.dumps(
         {
             "username": "user",
-            "app_password": "pass",
+            "api_token": "token",
             "workspace": "workspace",
             "repo_slug": "repo",
         }

@@ -39,7 +39,10 @@ class AzureDevOpsConfig(BaseModel):
 class BitbucketConfig(BaseModel):
     """Configuration for Bitbucket Pipelines provider."""
 
-    username: str = Field(..., description="Bitbucket username")
-    app_password: str = Field(..., description="Bitbucket app password")
+    username: str = Field(
+        ..., description="Bitbucket account email (e.g., user@company.com)"
+    )
+    api_token: str = Field(..., description="Bitbucket API token")
     workspace: str = Field(..., description="Bitbucket workspace slug")
-    repo_slug: str = Field(..., description="Repository slug")
+    repo_slug: str = Field(..., description="Repository slug containing the pipeline")
+    branch: str = Field(default="main", description="Branch to run pipeline on")

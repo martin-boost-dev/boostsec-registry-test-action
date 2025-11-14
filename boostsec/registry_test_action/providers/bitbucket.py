@@ -20,6 +20,10 @@ class BitbucketProvider(PipelineProvider):
         """Initialize Bitbucket provider with configuration."""
         self.config = config
         self.base_url = "https://api.bitbucket.org/2.0"
+        # Bitbucket uses Basic auth with username:api_token
+        auth_string = f"{config.username}:{config.api_token}"
+        auth_bytes = auth_string.encode("utf-8")
+        self._auth_header = f"Basic {base64.b64encode(auth_bytes).decode('utf-8')}"
 
     async def dispatch_test(
         self,
@@ -34,12 +38,8 @@ class BitbucketProvider(PipelineProvider):
                 f"{self.base_url}/repositories/{self.config.workspace}/"
                 f"{self.config.repo_slug}/pipelines/"
             )
-            auth_str = f"{self.config.username}:{self.config.app_password}"
-            auth_bytes = auth_str.encode("utf-8")
-            auth_b64 = base64.b64encode(auth_bytes).decode("utf-8")
-
             headers = {
-                "Authorization": f"Basic {auth_b64}",
+                "Authorization": self._auth_header,
                 "Content-Type": "application/json",
             }
             variables = [
@@ -61,9 +61,13 @@ class BitbucketProvider(PipelineProvider):
 
             payload = {
                 "target": {
-                    "ref_type": "branch",
                     "type": "pipeline_ref_target",
-                    "ref_name": "main",
+                    "selector": {
+                        "type": "custom",
+                        "pattern": "test-scanner",
+                    },
+                    "ref_name": self.config.branch,
+                    "ref_type": "branch",
                 },
                 "variables": variables,
             }
@@ -102,9 +106,13 @@ class BitbucketProvider(PipelineProvider):
             return (False, result)
 
         state_name = state_info.get("name")
-        is_complete = state_name == "COMPLETED"
+
+        # Check for terminal states
+        terminal_states = {"COMPLETED", "STOPPED", "ERROR", "FAILED"}
+        is_complete = state_name in terminal_states
 
         if not is_complete:
+            # Still running (PENDING, IN_PROGRESS)
             result = TestResult(
                 provider="bitbucket",
                 scanner="unknown",
@@ -115,6 +123,7 @@ class BitbucketProvider(PipelineProvider):
             )
             return (False, result)
 
+        # Pipeline completed, check the result
         result_info = state_info.get("result", {})
         if isinstance(result_info, dict):
             result_name = result_info.get("name", "")
@@ -141,12 +150,8 @@ class BitbucketProvider(PipelineProvider):
                 f"{self.base_url}/repositories/{self.config.workspace}/"
                 f"{self.config.repo_slug}/pipelines/{{{run_id}}}"
             )
-            auth_str = f"{self.config.username}:{self.config.app_password}"
-            auth_bytes = auth_str.encode("utf-8")
-            auth_b64 = base64.b64encode(auth_bytes).decode("utf-8")
-
             headers = {
-                "Authorization": f"Basic {auth_b64}",
+                "Authorization": self._auth_header,
             }
 
             async with session.get(url, headers=headers) as response:

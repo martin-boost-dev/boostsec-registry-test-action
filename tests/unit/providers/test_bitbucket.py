@@ -13,9 +13,10 @@ def bitbucket_config() -> BitbucketConfig:
     """Create test Bitbucket configuration."""
     return BitbucketConfig(
         username="testuser",
-        app_password="testpassword",
+        api_token="testtoken",
         workspace="test-workspace",
         repo_slug="test-repo",
+        branch="main",
     )
 
 

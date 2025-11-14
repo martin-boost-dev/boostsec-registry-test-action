@@ -105,19 +105,20 @@ def test_bitbucket_config_valid() -> None:
     """BitbucketConfig accepts all required fields."""
     config = BitbucketConfig(
         username="user123",
-        app_password="app_pwd_456",
+        api_token="token_456",
         workspace="boost-workspace",
         repo_slug="test-repo",
     )
     assert config.username == "user123"
-    assert config.app_password == "app_pwd_456"
+    assert config.api_token == "token_456"
     assert config.workspace == "boost-workspace"
     assert config.repo_slug == "test-repo"
+    assert config.branch == "main"  # Default value
 
 
 def test_bitbucket_config_missing_fields() -> None:
     """BitbucketConfig requires all fields."""
     with pytest.raises(ValidationError) as exc_info:
-        BitbucketConfig(username="user", app_password="pwd")  # type: ignore[call-arg]
+        BitbucketConfig(username="user", api_token="token")  # type: ignore[call-arg]
     assert "workspace" in str(exc_info.value)
     assert "repo_slug" in str(exc_info.value)
