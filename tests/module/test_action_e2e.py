@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from wiremock.testing.testcontainer import wiremock_container  # type: ignore
+from testcontainers.core.network import Network
+from wiremock.testing.testcontainer import WireMockContainer  # type: ignore
 
 
 @pytest.fixture(scope="module")
@@ -27,6 +28,18 @@ def test_registry_repo() -> Generator[Path, None, None]:
         )
         subprocess.run(
             ["git", "config", "user.name", "Test User"],
+            cwd=repo_path,
+            check=True,
+        )
+        # Add remote (required by orchestrator to get repository identifier)
+        subprocess.run(
+            [
+                "git",
+                "remote",
+                "add",
+                "origin",
+                "https://github.com/test/registry.git",
+            ],
             cwd=repo_path,
             check=True,
         )
@@ -88,8 +101,20 @@ tests:
 
 
 @pytest.fixture(scope="module")
-def wiremock_server() -> Generator[str, None, None]:
-    """Start WireMock server with GitHub API stubs."""
+def docker_network() -> Generator[Network, None, None]:
+    """Create a Docker network for WireMock and act to communicate."""
+    with Network() as network:
+        yield network
+
+
+@pytest.fixture(scope="module")
+def wiremock_server(docker_network: Network) -> Generator[tuple[str, str], None, None]:
+    """Start WireMock server with GitHub API stubs on Docker network.
+
+    Returns:
+        Tuple of (internal_url, external_url) where internal_url is for
+        containers on the same network and external_url is for host access.
+    """
     # Define mappings
     mappings = [
         # Workflow dispatch endpoint
@@ -103,23 +128,25 @@ def wiremock_server() -> Generator[str, None, None]:
                 "response": {"status": 204},
             },
         ),
-        # List workflow runs endpoint
+        # List workflow runs endpoint - return in_progress so it gets matched
         (
             "list-runs.json",
             {
                 "request": {
                     "method": "GET",
-                    "urlPattern": "/repos/.*/actions/workflows/.*/runs.*",
+                    "urlPattern": "/repos/.*/actions/runs.*",
                 },
                 "response": {
                     "status": 200,
+                    "headers": {"Content-Type": "application/json"},
                     "jsonBody": {
                         "workflow_runs": [
                             {
                                 "id": 12345,
-                                "status": "completed",
-                                "conclusion": "success",
-                                "created_at": "2025-01-01T00:00:00Z",
+                                "status": "in_progress",
+                                "conclusion": None,
+                                "display_title": "boostsecurityio/test-scanner - basic-test",
+                                "created_at": "2099-01-01T00:00:00Z",
                                 "html_url": "https://github.com/test/repo/actions/runs/12345",
                             }
                         ]
@@ -127,7 +154,7 @@ def wiremock_server() -> Generator[str, None, None]:
                 },
             },
         ),
-        # Get workflow run endpoint
+        # Get workflow run endpoint - return completed for polling
         (
             "get-run.json",
             {
@@ -137,10 +164,13 @@ def wiremock_server() -> Generator[str, None, None]:
                 },
                 "response": {
                     "status": 200,
+                    "headers": {"Content-Type": "application/json"},
                     "jsonBody": {
                         "id": 12345,
                         "status": "completed",
                         "conclusion": "success",
+                        "created_at": "2025-01-01T00:00:00Z",
+                        "updated_at": "2025-01-01T00:05:00Z",
                         "html_url": "https://github.com/test/repo/actions/runs/12345",
                     },
                 },
@@ -148,9 +178,28 @@ def wiremock_server() -> Generator[str, None, None]:
         ),
     ]
 
-    with wiremock_container(secure=False, mappings=mappings) as wm:
-        base_url = wm.get_url("")
-        yield base_url
+    # Create WireMock container and configure it
+    container = WireMockContainer(secure=False)
+
+    # Add all mappings
+    for name, mapping in mappings:
+        container = container.with_mapping(name, mapping)
+
+    # Give it a friendly name for DNS resolution
+    container = container.with_name("wiremock")
+
+    # Connect to Docker network
+    container = container.with_network(docker_network)
+
+    with container as wm:
+        # External URL for host access
+        external_url = wm.get_url("")
+
+        # Internal URL (for containers on the same network)
+        # Use container name for DNS resolution
+        internal_url = "http://wiremock:8080"
+
+        yield (internal_url, external_url)
 
 
 @pytest.fixture(scope="module")
@@ -187,14 +236,17 @@ jobs:
     return workflows_dir.parent
 
 
-@pytest.mark.skip(reason="E2E test needs updating for fail-fast behavior")
 def test_action_with_act(
-    test_registry_repo: Path, wiremock_server: str, test_workflow: Any
+    test_registry_repo: Path,
+    wiremock_server: tuple[str, str],
+    docker_network: Network,
+    test_workflow: Any,
 ) -> None:
     """Test the action end-to-end using act and WireMock.
 
     Requires: act (nektos) must be installed.
     """
+    internal_wiremock_url, external_wiremock_url = wiremock_server
     # Copy action files to test registry (action.yaml and source code)
     action_root = Path(__file__).parent.parent.parent
 
@@ -232,16 +284,18 @@ def test_action_with_act(
         check=True,
     )
 
-    # Build act command with environment variables
+    # Build act command with environment variables and Docker network
     # Use medium-sized runner image to avoid interactive prompt
     act_cmd = [
         "act",
         "push",
         "-v",
         "--env",
-        f"GITHUB_API_URL={wiremock_server}",
+        f"GITHUB_API_URL={internal_wiremock_url}",
         "--container-architecture",
         "linux/amd64",
+        "--network",
+        docker_network.name,
         "-P",
         "ubuntu-latest=catthehacker/ubuntu:act-latest",
     ]
@@ -263,10 +317,12 @@ def test_action_with_act(
         f"act failed:\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
     )
 
-    # Verify the CLI executed (output contains either test results or "No tests")
-    # Note: git diff detection may not work perfectly in act's checkout
-    assert (  # pragma: no cover
-        "No tests to run" in result.stdout
-        or "test-scanner" in result.stdout
-        or "passed" in result.stdout.lower()
-    ), f"Expected CLI output not found in:\n{result.stdout}"
+    # Verify the CLI executed and test ran successfully
+    # Look for either successful test execution or "No tests" message
+    output = result.stdout + result.stderr
+    assert (
+        "boostsecurityio/test-scanner" in output
+        or "basic-test" in output
+        or '"passed": 1' in output
+        or "No tests to run" in output
+    ), f"Expected CLI output not found in:\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
