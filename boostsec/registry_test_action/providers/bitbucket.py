@@ -20,6 +20,8 @@ class BitbucketProvider(PipelineProvider):
         """Initialize Bitbucket provider with configuration."""
         self.config = config
         self.base_url = "https://api.bitbucket.org/2.0"
+        # Store test context for each pipeline to populate TestResult correctly
+        self._pipeline_context: dict[str, tuple[str, str]] = {}
         # Bitbucket uses Basic auth with username:api_token
         auth_string = f"{config.username}:{config.api_token}"
         auth_bytes = auth_string.encode("utf-8")
@@ -85,10 +87,18 @@ class BitbucketProvider(PipelineProvider):
         if not isinstance(pipeline_uuid, str):
             raise RuntimeError("Pipeline UUID not found in response")
 
-        return pipeline_uuid.strip("{}")
+        pipeline_id = pipeline_uuid.strip("{}")
+
+        # Store test context for later use in poll_status
+        self._pipeline_context[pipeline_id] = (scanner_id, test.name)
+
+        return pipeline_id
 
     async def poll_status(self, run_id: str) -> tuple[bool, TestResult]:
         """Check if pipeline is complete and get result."""
+        # Retrieve stored test context
+        scanner, test_name = self._pipeline_context.get(run_id, ("unknown", "unknown"))
+
         data = await self._fetch_pipeline_status(run_id)
 
         state_info = data.get("state")
@@ -97,8 +107,8 @@ class BitbucketProvider(PipelineProvider):
         if not isinstance(state_info, dict):
             result = TestResult(
                 provider="bitbucket",
-                scanner="unknown",
-                test_name="unknown",
+                scanner=scanner,
+                test_name=test_name,
                 status="error",
                 duration=0.0,
                 run_url=web_url,
@@ -115,8 +125,8 @@ class BitbucketProvider(PipelineProvider):
             # Still running (PENDING, IN_PROGRESS)
             result = TestResult(
                 provider="bitbucket",
-                scanner="unknown",
-                test_name="unknown",
+                scanner=scanner,
+                test_name=test_name,
                 status="error",
                 duration=0.0,
                 run_url=web_url,
@@ -134,8 +144,8 @@ class BitbucketProvider(PipelineProvider):
 
         result = TestResult(
             provider="bitbucket",
-            scanner="unknown",
-            test_name="unknown",
+            scanner=scanner,
+            test_name=test_name,
             status=test_status,
             duration=0.0,
             run_url=web_url,
