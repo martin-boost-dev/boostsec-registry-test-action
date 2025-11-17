@@ -727,6 +727,16 @@ make format lint test
    - Logger format already includes module name, so prefixes were duplicative
    - Results in cleaner, more readable logs
 
+7. **End-to-End Test Infrastructure**:
+   - Uses `act` (nektos/act) to run GitHub Actions locally in Docker containers
+   - Uses WireMock via testcontainers-python to mock GitHub API responses
+   - WireMock and act containers communicate via Docker network (not localhost)
+   - testcontainers Network class manages Docker network lifecycle
+   - Container naming: WireMock container named "wiremock" for clean DNS resolution (http://wiremock:8080)
+   - WireMock URL patterns must match actual API endpoints (e.g., `/repos/.*/actions/runs.*` not `/repos/.*/actions/workflows/.*/runs.*`)
+   - WireMock responses must include `Content-Type: application/json` header (aiohttp requirement)
+   - Workflow run timestamps should use future dates (e.g., 2099) to pass time window validation in tests
+
 ### Mistakes to Avoid
 
 1. **Don't use wall-clock time for test duration** - Always extract timing from the CI/CD provider's API response to get accurate execution time without polling overhead.
@@ -736,6 +746,12 @@ make format lint test
 3. **Don't forget multi-line output handling** - GitHub Actions requires heredoc syntax for multi-line `$GITHUB_OUTPUT` values.
 
 4. **Don't skip commit SHA resolution** - Always use exact commit SHA instead of branch name to prevent race conditions in concurrent environments.
+
+5. **Don't use localhost for Docker container communication** - Containers on the same Docker network should use container names for DNS resolution, not localhost.
+
+6. **Don't forget Content-Type headers in WireMock** - aiohttp requires proper `Content-Type: application/json` header to parse JSON responses.
+
+7. **Don't use past timestamps in test mocks** - GitHub provider validates workflow runs were created within 60 seconds of dispatch; use future timestamps in tests.
 
 ### Testing Strategy
 
