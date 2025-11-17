@@ -8,8 +8,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from testcontainers.core.network import Network
-from wiremock.testing.testcontainer import WireMockContainer  # type: ignore
+from testcontainers.core.network import Network  # type: ignore[import-untyped]
+from wiremock.testing.testcontainer import (  # type: ignore[import-untyped]
+    WireMockContainer,
+)
 
 
 @pytest.fixture(scope="module")
@@ -114,6 +116,7 @@ def wiremock_server(docker_network: Network) -> Generator[tuple[str, str], None,
     Returns:
         Tuple of (internal_url, external_url) where internal_url is for
         containers on the same network and external_url is for host access.
+
     """
     # Define mappings
     mappings = [
@@ -145,9 +148,13 @@ def wiremock_server(docker_network: Network) -> Generator[tuple[str, str], None,
                                 "id": 12345,
                                 "status": "in_progress",
                                 "conclusion": None,
-                                "display_title": "boostsecurityio/test-scanner - basic-test",
+                                "display_title": (
+                                    "boostsecurityio/test-scanner - basic-test"
+                                ),
                                 "created_at": "2099-01-01T00:00:00Z",
-                                "html_url": "https://github.com/test/repo/actions/runs/12345",
+                                "html_url": (
+                                    "https://github.com/test/repo/actions/runs/12345"
+                                ),
                             }
                         ]
                     },
@@ -246,7 +253,7 @@ def test_action_with_act(
 
     Requires: act (nektos) must be installed.
     """
-    internal_wiremock_url, external_wiremock_url = wiremock_server
+    internal_wiremock_url, _external_wiremock_url = wiremock_server
     # Copy action files to test registry (action.yaml and source code)
     action_root = Path(__file__).parent.parent.parent
 
@@ -325,4 +332,8 @@ def test_action_with_act(
         or "basic-test" in output
         or '"passed": 1' in output
         or "No tests to run" in output
-    ), f"Expected CLI output not found in:\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+    ), (
+        f"Expected CLI output not found in:\n"
+        f"STDOUT: {result.stdout}\n"
+        f"STDERR: {result.stderr}"
+    )
