@@ -94,7 +94,9 @@ The action uses a JSON configuration string for provider-specific settings. Each
   "token": "your-github-token",
   "owner": "repository-owner",
   "repo": "repository-name",
-  "workflow_id": "workflow.yml"
+  "workflow_id": "workflow.yml",
+  "ref": "main",
+  "base_url": "https://api.github.com"
 }
 ```
 
@@ -104,6 +106,8 @@ The action uses a JSON configuration string for provider-specific settings. Each
 | `owner` | string | Yes | Repository owner (organization or user) |
 | `repo` | string | Yes | Repository name |
 | `workflow_id` | string | Yes | Workflow file name or ID to dispatch |
+| `ref` | string | No | Git reference to run workflow on in test runner repo (default: "main") |
+| `base_url` | string | No | GitHub API base URL (default: "https://api.github.com") |
 
 #### GitLab CI
 ```json
@@ -143,18 +147,20 @@ The action uses a JSON configuration string for provider-specific settings. Each
 ```json
 {
   "username": "your-username",
-  "app_password": "your-app-password",
+  "api_token": "your-api-token",
   "workspace": "your-workspace",
-  "repo_slug": "repository-slug"
+  "repo_slug": "repository-slug",
+  "branch": "main"
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `username` | string | Yes | Bitbucket username |
-| `app_password` | string | Yes | Bitbucket App Password with `repository:write, pipeline:write` permissions |
+| `username` | string | Yes | Bitbucket account email (e.g., user@company.com) |
+| `api_token` | string | Yes | Bitbucket repository access token with `Pipelines: Read/Write` permissions |
 | `workspace` | string | Yes | Bitbucket workspace slug |
 | `repo_slug` | string | Yes | Repository slug for the runner |
+| `branch` | string | No | Branch to run pipeline on (default: "main") |
 
 ## Usage
 
@@ -228,9 +234,10 @@ jobs:
     provider-config: |
       {
         "username": "${{ secrets.BITBUCKET_USERNAME }}",
-        "app_password": "${{ secrets.BITBUCKET_APP_PASSWORD }}",
+        "api_token": "${{ secrets.BITBUCKET_API_TOKEN }}",
         "workspace": "${{ secrets.BITBUCKET_WORKSPACE }}",
-        "repo_slug": "${{ secrets.BITBUCKET_REPO_SLUG }}"
+        "repo_slug": "${{ secrets.BITBUCKET_REPO_SLUG }}",
+        "branch": "main"
       }
 ```
 
