@@ -140,9 +140,13 @@ class GitLabProvider(PipelineProvider):
         return (True, results)
 
     def _extract_test_name_from_job(self, job_name: str) -> str:
-        """Extract test name from job name."""
-        parts = job_name.replace("run-test-", "").split("-")
-        return "-".join(parts) if parts else "unknown"
+        """Extract test name and scan path from job name.
+
+        Job names are formatted as: run-test-{test_name}-{scan_path}
+        with special chars replaced by hyphens.
+        """
+        cleaned = job_name.replace("run-test-", "", 1)
+        return cleaned if cleaned else "unknown"  # pragma: no cover
 
     def _calculate_job_duration(self, job: Mapping[str, object]) -> float:
         """Calculate job duration from timestamps."""

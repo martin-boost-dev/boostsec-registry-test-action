@@ -139,11 +139,20 @@ class GitHubProvider(PipelineProvider):
         return (True, results)
 
     def _extract_test_name_from_job(self, job_name: str) -> str:
-        """Extract test name from job name."""
+        """Extract test name and scan path from job name.
+
+        GitHub formats matrix jobs as: job_name (var1, var2, ...)
+        Our matrix has: test_name, test_type, source_url, source_ref, scan_path, ...
+        """
         parts = job_name.split("(")
         if len(parts) > 1:
             test_info = parts[1].rstrip(")")
-            return test_info.split(",")[0].strip()
+            values = [v.strip() for v in test_info.split(",")]
+            if len(values) >= 5:
+                test_name = values[0]
+                scan_path = values[4]
+                return f"{test_name} [{scan_path}]"
+            return values[0] if values else "unknown"  # pragma: no cover
         return "unknown"  # pragma: no cover
 
     async def _find_workflow_run(self, dispatch_time: float, scanner_id: str) -> str:

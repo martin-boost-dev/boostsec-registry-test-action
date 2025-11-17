@@ -152,10 +152,15 @@ class AzureDevOpsProvider(PipelineProvider):
         return (True, results)
 
     def _extract_test_name_from_job(self, job_name: str) -> str:
-        """Extract test name from job name."""
+        """Extract test name and scan path from job name.
+
+        Azure formats matrix jobs as: Run scanner (matrix_identifier)
+        Where matrix_identifier includes all matrix variables.
+        """
         parts = job_name.split("(")
         if len(parts) > 1:
-            return parts[1].rstrip(")").strip()
+            matrix_info = parts[1].rstrip(")").strip()
+            return matrix_info if matrix_info else "unknown"  # pragma: no cover
         return "unknown"  # pragma: no cover
 
     def _calculate_job_duration(self, record: Mapping[str, object]) -> float:
