@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class TestSource(BaseModel):
@@ -25,12 +25,20 @@ class Test(BaseModel):
     )
     source: TestSource = Field(..., description="Source repository details")
     scan_paths: list[str] = Field(
-        default_factory=list, description="Paths to scan within the repository"
+        default_factory=list,
+        description="Paths to scan within the repository",
     )
     scan_configs: list[dict[str, object]] | None = Field(
         default=None, description="Optional scan configurations"
     )
     timeout: str = Field(default="5m", description="Test timeout (e.g., '300s', '5m')")
+
+    @model_validator(mode="after")
+    def default_scan_paths_to_root(self) -> "Test":
+        """Set scan paths to repository root if empty."""
+        if not self.scan_paths:
+            self.scan_paths = ["."]
+        return self
 
 
 class TestDefinition(BaseModel):

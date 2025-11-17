@@ -33,9 +33,20 @@ def test_test_with_defaults() -> None:
     )
     assert test.name == "smoke test"
     assert test.type == "source-code"
-    assert test.scan_paths == []
+    assert test.scan_paths == ["."]
     assert test.scan_configs is None
     assert test.timeout == "5m"
+
+
+def test_test_empty_scan_paths_defaults_to_root() -> None:
+    """Empty scan_paths list defaults to repository root."""
+    test = Test(
+        name="smoke test",
+        type="source-code",
+        source=TestSource(url="https://github.com/org/repo.git", ref="main"),
+        scan_paths=[],
+    )
+    assert test.scan_paths == ["."]
 
 
 def test_test_with_all_fields() -> None:
