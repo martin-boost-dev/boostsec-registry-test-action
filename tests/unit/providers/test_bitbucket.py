@@ -4,7 +4,11 @@ import pytest
 from aioresponses import aioresponses
 
 from boostsec.registry_test_action.models.provider_config import BitbucketConfig
-from boostsec.registry_test_action.models.test_definition import Test, TestSource
+from boostsec.registry_test_action.models.test_definition import (
+    Test,
+    TestDefinition,
+    TestSource,
+)
 from boostsec.registry_test_action.providers.bitbucket import BitbucketProvider
 
 
@@ -21,23 +25,28 @@ def bitbucket_config() -> BitbucketConfig:
 
 
 @pytest.fixture
-def test_definition() -> Test:
+def test_definition() -> TestDefinition:
     """Create test definition."""
-    return Test(
-        name="smoke test",
-        type="source-code",
-        source=TestSource(
-            url="https://github.com/OWASP/NodeGoat.git",
-            ref="main",
-        ),
-        scan_paths=["."],
+    return TestDefinition(
+        version="1.0",
+        tests=[
+            Test(
+                name="smoke test",
+                type="source-code",
+                source=TestSource(
+                    url="https://github.com/OWASP/NodeGoat.git",
+                    ref="main",
+                ),
+                scan_paths=["."],
+            )
+        ],
     )
 
 
-async def test_dispatch_test_success(
-    bitbucket_config: BitbucketConfig, test_definition: Test
+async def test_dispatch_scanner_tests_success(
+    bitbucket_config: BitbucketConfig, test_definition: TestDefinition
 ) -> None:
-    """dispatch_test successfully triggers pipeline."""
+    """dispatch_scanner_tests successfully triggers pipeline."""
     provider = BitbucketProvider(bitbucket_config)
 
     with aioresponses() as m:
@@ -51,7 +60,7 @@ async def test_dispatch_test_success(
             },
         )
 
-        pipeline_id = await provider.dispatch_test(
+        pipeline_id = await provider.dispatch_scanner_tests(
             "boostsecurityio/trivy-fs",
             test_definition,
             "main",
@@ -61,19 +70,24 @@ async def test_dispatch_test_success(
     assert pipeline_id == "abc-123-def"
 
 
-async def test_dispatch_test_with_scan_configs(
+async def test_dispatch_scanner_tests_with_scan_configs(
     bitbucket_config: BitbucketConfig,
 ) -> None:
-    """dispatch_test includes scan_configs when provided."""
-    test_with_configs = Test(
-        name="config test",
-        type="source-code",
-        source=TestSource(
-            url="https://github.com/OWASP/NodeGoat.git",
-            ref="main",
-        ),
-        scan_paths=["."],
-        scan_configs=[{"key": "value"}],
+    """dispatch_scanner_tests includes scan_configs when provided."""
+    test_def_with_configs = TestDefinition(
+        version="1.0",
+        tests=[
+            Test(
+                name="config test",
+                type="source-code",
+                source=TestSource(
+                    url="https://github.com/OWASP/NodeGoat.git",
+                    ref="main",
+                ),
+                scan_paths=["."],
+                scan_configs=[{"key": "value"}],
+            )
+        ],
     )
 
     provider = BitbucketProvider(bitbucket_config)
@@ -89,9 +103,9 @@ async def test_dispatch_test_with_scan_configs(
             },
         )
 
-        pipeline_id = await provider.dispatch_test(
+        pipeline_id = await provider.dispatch_scanner_tests(
             "boostsecurityio/trivy-fs",
-            test_with_configs,
+            test_def_with_configs,
             "main",
             "test/registry",
         )
@@ -99,10 +113,10 @@ async def test_dispatch_test_with_scan_configs(
     assert pipeline_id == "abc-123-def"
 
 
-async def test_dispatch_test_failure(
-    bitbucket_config: BitbucketConfig, test_definition: Test
+async def test_dispatch_scanner_tests_failure(
+    bitbucket_config: BitbucketConfig, test_definition: TestDefinition
 ) -> None:
-    """dispatch_test raises RuntimeError on API failure."""
+    """dispatch_scanner_tests raises RuntimeError on API failure."""
     provider = BitbucketProvider(bitbucket_config)
 
     with aioresponses() as m:
@@ -114,7 +128,7 @@ async def test_dispatch_test_failure(
         )
 
         with pytest.raises(RuntimeError, match="Failed to trigger pipeline"):
-            await provider.dispatch_test(
+            await provider.dispatch_scanner_tests(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
@@ -122,10 +136,10 @@ async def test_dispatch_test_failure(
             )
 
 
-async def test_dispatch_test_missing_uuid(
-    bitbucket_config: BitbucketConfig, test_definition: Test
+async def test_dispatch_scanner_tests_missing_uuid(
+    bitbucket_config: BitbucketConfig, test_definition: TestDefinition
 ) -> None:
-    """dispatch_test raises RuntimeError when UUID is missing."""
+    """dispatch_scanner_tests raises RuntimeError when UUID is missing."""
     provider = BitbucketProvider(bitbucket_config)
 
     with aioresponses() as m:
@@ -137,7 +151,7 @@ async def test_dispatch_test_missing_uuid(
         )
 
         with pytest.raises(RuntimeError, match="Pipeline UUID not found"):
-            await provider.dispatch_test(
+            await provider.dispatch_scanner_tests(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
@@ -145,10 +159,10 @@ async def test_dispatch_test_missing_uuid(
             )
 
 
-async def test_dispatch_test_missing_build_number(
-    bitbucket_config: BitbucketConfig, test_definition: Test
+async def test_dispatch_scanner_tests_missing_build_number(
+    bitbucket_config: BitbucketConfig, test_definition: TestDefinition
 ) -> None:
-    """dispatch_test handles missing build_number gracefully."""
+    """dispatch_scanner_tests handles missing build_number gracefully."""
     provider = BitbucketProvider(bitbucket_config)
 
     with aioresponses() as m:
@@ -158,11 +172,10 @@ async def test_dispatch_test_missing_build_number(
             status=201,
             payload={
                 "uuid": "{abc-123-def}",
-                # No build_number in response
             },
         )
 
-        pipeline_id = await provider.dispatch_test(
+        pipeline_id = await provider.dispatch_scanner_tests(
             "boostsecurityio/trivy-fs",
             test_definition,
             "main",
@@ -170,23 +183,11 @@ async def test_dispatch_test_missing_build_number(
         )
 
     assert pipeline_id == "abc-123-def"
-    # Verify context was stored with empty URL
-    assert provider._pipeline_context["abc-123-def"] == (
-        "boostsecurityio/trivy-fs",
-        "smoke test",
-        "",
-    )
 
 
 async def test_poll_status_in_progress(bitbucket_config: BitbucketConfig) -> None:
     """poll_status returns not complete when pipeline is in progress."""
     provider = BitbucketProvider(bitbucket_config)
-    # Manually populate context as if dispatch_test was called
-    provider._pipeline_context["abc-123"] = (
-        "scanner1",
-        "test1",
-        "https://bitbucket.org/test-workspace/test-repo/pipelines/results/17",
-    )
 
     with aioresponses() as m:
         m.get(
@@ -198,27 +199,17 @@ async def test_poll_status_in_progress(bitbucket_config: BitbucketConfig) -> Non
             },
         )
 
-        is_complete, result = await provider.poll_status("abc-123")
+        is_complete, results = await provider.poll_status("abc-123")
 
     assert is_complete is False
-    assert result.provider == "bitbucket"
-    assert result.status == "error"
-    assert result.scanner == "scanner1"
-    assert result.test_name == "test1"
-    assert (
-        result.run_url
-        == "https://bitbucket.org/test-workspace/test-repo/pipelines/results/17"
-    )
+    assert results == []
 
 
 async def test_poll_status_completed_success(bitbucket_config: BitbucketConfig) -> None:
     """poll_status returns complete with success status."""
     provider = BitbucketProvider(bitbucket_config)
-    # Manually populate context as if dispatch_test was called
-    provider._pipeline_context["abc-123"] = (
-        "scanner1",
-        "test1",
-        "https://bitbucket.org/test-workspace/test-repo/pipelines/results/17",
+    provider._run_urls["abc-123"] = (
+        "https://bitbucket.org/test-workspace/test-repo/pipelines/results/17"
     )
 
     with aioresponses() as m:
@@ -231,13 +222,15 @@ async def test_poll_status_completed_success(bitbucket_config: BitbucketConfig) 
             },
         )
 
-        is_complete, result = await provider.poll_status("abc-123")
+        is_complete, results = await provider.poll_status("abc-123")
 
     assert is_complete is True
-    assert result.status == "success"
-    assert result.provider == "bitbucket"
+    assert len(results) == 1
+    assert results[0].status == "success"
+    assert results[0].provider == "bitbucket"
+    assert results[0].test_name == "matrix-tests"
     assert (
-        result.run_url
+        results[0].run_url
         == "https://bitbucket.org/test-workspace/test-repo/pipelines/results/17"
     )
 
@@ -245,11 +238,8 @@ async def test_poll_status_completed_success(bitbucket_config: BitbucketConfig) 
 async def test_poll_status_completed_failure(bitbucket_config: BitbucketConfig) -> None:
     """poll_status returns complete with failure status."""
     provider = BitbucketProvider(bitbucket_config)
-    # Manually populate context as if dispatch_test was called
-    provider._pipeline_context["abc-123"] = (
-        "scanner1",
-        "test1",
-        "https://bitbucket.org/test-workspace/test-repo/pipelines/results/17",
+    provider._run_urls["abc-123"] = (
+        "https://bitbucket.org/test-workspace/test-repo/pipelines/results/17"
     )
 
     with aioresponses() as m:
@@ -262,12 +252,13 @@ async def test_poll_status_completed_failure(bitbucket_config: BitbucketConfig) 
             },
         )
 
-        is_complete, result = await provider.poll_status("abc-123")
+        is_complete, results = await provider.poll_status("abc-123")
 
     assert is_complete is True
-    assert result.status == "failure"
+    assert len(results) == 1
+    assert results[0].status == "failure"
     assert (
-        result.run_url
+        results[0].run_url
         == "https://bitbucket.org/test-workspace/test-repo/pipelines/results/17"
     )
 
@@ -303,12 +294,6 @@ async def test_map_result_all_statuses(bitbucket_config: BitbucketConfig) -> Non
 async def test_poll_status_invalid_state(bitbucket_config: BitbucketConfig) -> None:
     """poll_status handles invalid state gracefully."""
     provider = BitbucketProvider(bitbucket_config)
-    # Manually populate context as if dispatch_test was called
-    provider._pipeline_context["abc-123"] = (
-        "scanner1",
-        "test1",
-        "https://bitbucket.org/test-workspace/test-repo/pipelines/results/17",
-    )
 
     with aioresponses() as m:
         m.get(
@@ -320,21 +305,15 @@ async def test_poll_status_invalid_state(bitbucket_config: BitbucketConfig) -> N
             },
         )
 
-        is_complete, result = await provider.poll_status("abc-123")
+        is_complete, results = await provider.poll_status("abc-123")
 
     assert is_complete is False
-    assert result.status == "error"
+    assert results == []
 
 
 async def test_poll_status_result_not_dict(bitbucket_config: BitbucketConfig) -> None:
     """poll_status handles non-dict result gracefully."""
     provider = BitbucketProvider(bitbucket_config)
-    # Manually populate context as if dispatch_test was called
-    provider._pipeline_context["abc-123"] = (
-        "scanner1",
-        "test1",
-        "https://bitbucket.org/test-workspace/test-repo/pipelines/results/17",
-    )
 
     with aioresponses() as m:
         m.get(
@@ -346,7 +325,9 @@ async def test_poll_status_result_not_dict(bitbucket_config: BitbucketConfig) ->
             },
         )
 
-        is_complete, result = await provider.poll_status("abc-123")
+        is_complete, results = await provider.poll_status("abc-123")
 
     assert is_complete is True
-    assert result.status == "error"
+    assert len(results) == 1
+    assert results[0].status == "error"
+    assert results[0].test_name == "matrix-tests"

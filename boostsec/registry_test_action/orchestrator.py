@@ -6,10 +6,7 @@ import subprocess
 from collections.abc import Awaitable
 from pathlib import Path
 
-from boostsec.registry_test_action.models.test_definition import (
-    Test,
-    TestDefinition,
-)
+from boostsec.registry_test_action.models.test_definition import TestDefinition
 from boostsec.registry_test_action.models.test_result import TestResult
 from boostsec.registry_test_action.providers.base import PipelineProvider
 from boostsec.registry_test_action.scanner_detector import detect_changed_scanners
@@ -116,35 +113,35 @@ class TestOrchestrator:
         scanner_ids: list[str],
         registry_ref: str,
         registry_repo: str,
-    ) -> list[Awaitable[TestResult]]:
-        """Build list of test tasks to execute."""
-        tasks: list[Awaitable[TestResult]] = []
+    ) -> list[Awaitable[list[TestResult]]]:
+        """Build list of scanner test tasks to execute."""
+        tasks: list[Awaitable[list[TestResult]]] = []
         for scanner_id in scanner_ids:
             test_def = test_definitions.get(scanner_id)
             if not test_def:
                 continue
 
-            for test in test_def.tests:
-                task = self._run_single_test(
-                    scanner_id, test, registry_ref, registry_repo
-                )
-                tasks.append(task)
+            task = self._run_scanner_tests(
+                scanner_id, test_def, registry_ref, registry_repo
+            )
+            tasks.append(task)
 
         return tasks
 
     def _process_results(
-        self, results: list[TestResult | BaseException]
+        self, results: list[list[TestResult] | BaseException]
     ) -> list[TestResult]:
         """Process results from test execution."""
         final_results: list[TestResult] = []
         for result in results:
-            if isinstance(result, TestResult):
-                test_id = f"{result.scanner}/{result.test_name}"
-                logger.info(f"Test result: {test_id} = {result.status}")
-                final_results.append(result)
+            if isinstance(result, list):
+                for test_result in result:
+                    test_id = f"{test_result.scanner}/{test_result.test_name}"
+                    logger.info(f"Test result: {test_id} = {test_result.status}")
+                    final_results.append(test_result)
             elif isinstance(result, Exception):
                 logger.error(
-                    f"Test execution error: {type(result).__name__}: {result}",
+                    f"Scanner test execution error: {type(result).__name__}: {result}",
                     exc_info=result,
                 )
                 error_result = TestResult(
@@ -158,24 +155,28 @@ class TestOrchestrator:
                 final_results.append(error_result)
         return final_results
 
-    async def _run_single_test(
+    async def _run_scanner_tests(
         self,
         scanner_id: str,
-        test: Test,
+        test_definition: TestDefinition,
         registry_ref: str,
         registry_repo: str,
-    ) -> TestResult:
-        """Run a single test on the provider and wait for completion."""
-        logger.info(f"Dispatching test: {scanner_id}/{test.name}")
-        run_id = await self.provider.dispatch_test(
-            scanner_id, test, registry_ref, registry_repo
+    ) -> list[TestResult]:
+        """Run all tests for a scanner and wait for completion."""
+        matrix_entries = test_definition.to_matrix_entries()
+        logger.info(
+            f"Dispatching scanner tests: {scanner_id} ({len(matrix_entries)} matrix jobs)"
         )
-        logger.info(f"Test dispatched with run_id: {run_id}")
 
-        logger.info(f"Waiting for test completion: {scanner_id}/{test.name}")
-        result = await self.provider.wait_for_completion(run_id)
+        run_id = await self.provider.dispatch_scanner_tests(
+            scanner_id, test_definition, registry_ref, registry_repo
+        )
+        logger.info(f"Scanner tests dispatched with run_id: {run_id}")
 
-        result.scanner = scanner_id
-        result.test_name = test.name
+        logger.info(f"Waiting for scanner tests completion: {scanner_id}")
+        results = await self.provider.wait_for_completion(run_id)
 
-        return result
+        for result in results:
+            result.scanner = scanner_id
+
+        return results

@@ -25,40 +25,42 @@ class TestProvider(PipelineProvider):
 
     def __init__(self) -> None:
         """Initialize test provider with mocks."""
-        self.dispatch_test_mock = AsyncMock()
+        self.dispatch_scanner_tests_mock = AsyncMock()
         self.wait_for_completion_mock = AsyncMock()
 
-    async def dispatch_test(
+    async def dispatch_scanner_tests(
         self,
         scanner_id: str,
-        test: Test,
+        test_definition: TestDefinition,
         registry_ref: str,
         registry_repo: str,
     ) -> str:
         """Mock dispatch."""
-        result: str = await self.dispatch_test_mock(
-            scanner_id, test, registry_ref, registry_repo
+        result: str = await self.dispatch_scanner_tests_mock(
+            scanner_id, test_definition, registry_ref, registry_repo
         )
         return result
 
-    async def poll_status(self, run_id: str) -> tuple[bool, TestResult]:
+    async def poll_status(self, run_id: str) -> tuple[bool, list[TestResult]]:
         """Mock poll status."""
         return (
             True,
-            TestResult(
-                provider="test",
-                scanner="",
-                test_name="",
-                status="success",
-                duration=0.0,
-            ),
+            [
+                TestResult(
+                    provider="test",
+                    scanner="",
+                    test_name="",
+                    status="success",
+                    duration=0.0,
+                )
+            ],
         )  # pragma: no cover
 
     async def wait_for_completion(
         self, run_id: str, timeout: float = 1800, poll_interval: float = 30
-    ) -> TestResult:
+    ) -> list[TestResult]:
         """Mock wait for completion."""
-        result: TestResult = await self.wait_for_completion_mock(
+        result: list[TestResult] = await self.wait_for_completion_mock(
             run_id, timeout, poll_interval
         )
         return result
@@ -90,7 +92,7 @@ async def test_run_tests_no_changed_scanners(test_provider: TestProvider) -> Non
         )
 
     assert results == []
-    test_provider.dispatch_test_mock.assert_not_called()
+    test_provider.dispatch_scanner_tests_mock.assert_not_called()
 
 
 async def test_run_tests_single_scanner_single_test(
@@ -107,14 +109,16 @@ async def test_run_tests_single_scanner_single_test(
     )
     test_def = TestDefinition(version="1.0", tests=[test])
 
-    test_provider.dispatch_test_mock.return_value = "run123"
-    test_provider.wait_for_completion_mock.return_value = TestResult(
-        provider="test",
-        scanner="",
-        test_name="",
-        status="success",
-        duration=10.0,
-    )
+    test_provider.dispatch_scanner_tests_mock.return_value = "run123"
+    test_provider.wait_for_completion_mock.return_value = [
+        TestResult(
+            provider="test",
+            scanner="",
+            test_name="test1",
+            status="success",
+            duration=10.0,
+        )
+    ]
 
     with (
         patch(
@@ -137,8 +141,8 @@ async def test_run_tests_single_scanner_single_test(
     assert results[0].scanner == "scanner1"
     assert results[0].test_name == "test1"
     assert results[0].status == "success"
-    test_provider.dispatch_test_mock.assert_called_once_with(
-        "scanner1", test, "feature", "test/registry"
+    test_provider.dispatch_scanner_tests_mock.assert_called_once_with(
+        "scanner1", test_def, "feature", "test/registry"
     )
 
 
@@ -163,17 +167,33 @@ async def test_run_tests_multiple_scanners_multiple_tests(
     test_def1 = TestDefinition(version="1.0", tests=[test1, test2])
     test_def2 = TestDefinition(version="1.0", tests=[test1])
 
-    test_provider.dispatch_test_mock.side_effect = ["run1", "run2", "run3"]
+    test_provider.dispatch_scanner_tests_mock.side_effect = ["run1", "run2"]
     test_provider.wait_for_completion_mock.side_effect = [
-        TestResult(
-            provider="test", scanner="", test_name="", status="success", duration=10.0
-        ),
-        TestResult(
-            provider="test", scanner="", test_name="", status="failure", duration=15.0
-        ),
-        TestResult(
-            provider="test", scanner="", test_name="", status="success", duration=20.0
-        ),
+        [
+            TestResult(
+                provider="test",
+                scanner="",
+                test_name="test1",
+                status="success",
+                duration=10.0,
+            ),
+            TestResult(
+                provider="test",
+                scanner="",
+                test_name="test2",
+                status="failure",
+                duration=15.0,
+            ),
+        ],
+        [
+            TestResult(
+                provider="test",
+                scanner="",
+                test_name="test1",
+                status="success",
+                duration=20.0,
+            )
+        ],
     ]
 
     with (
@@ -194,8 +214,8 @@ async def test_run_tests_multiple_scanners_multiple_tests(
         )
 
     assert len(results) == 3
-    assert test_provider.dispatch_test_mock.call_count == 3
-    assert test_provider.wait_for_completion_mock.call_count == 3
+    assert test_provider.dispatch_scanner_tests_mock.call_count == 2
+    assert test_provider.wait_for_completion_mock.call_count == 2
 
 
 async def test_run_tests_handles_exceptions(test_provider: TestProvider) -> None:
@@ -210,7 +230,7 @@ async def test_run_tests_handles_exceptions(test_provider: TestProvider) -> None
     )
     test_def = TestDefinition(version="1.0", tests=[test])
 
-    test_provider.dispatch_test_mock.return_value = "run123"
+    test_provider.dispatch_scanner_tests_mock.return_value = "run123"
     test_provider.wait_for_completion_mock.side_effect = RuntimeError("API Error")
 
     with (
@@ -259,7 +279,7 @@ async def test_run_tests_skips_scanners_without_test_definitions(
         )
 
     assert results == []
-    test_provider.dispatch_test_mock.assert_not_called()
+    test_provider.dispatch_scanner_tests_mock.assert_not_called()
 
 
 def test_get_repository_identifier_success(tmp_path: Path) -> None:

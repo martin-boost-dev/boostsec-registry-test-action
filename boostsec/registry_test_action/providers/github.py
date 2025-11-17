@@ -9,7 +9,7 @@ from typing import Literal
 import aiohttp
 
 from boostsec.registry_test_action.models.provider_config import GitHubConfig
-from boostsec.registry_test_action.models.test_definition import Test
+from boostsec.registry_test_action.models.test_definition import TestDefinition
 from boostsec.registry_test_action.models.test_result import TestResult
 from boostsec.registry_test_action.providers.base import PipelineProvider
 
@@ -22,15 +22,18 @@ class GitHubProvider(PipelineProvider):
         self.config = config
         self.base_url = config.base_url
 
-    async def dispatch_test(
+    async def dispatch_scanner_tests(
         self,
         scanner_id: str,
-        test: Test,
+        test_definition: TestDefinition,
         registry_ref: str,
         registry_repo: str,
     ) -> str:
-        """Dispatch workflow and return run ID."""
+        """Dispatch workflow with matrix and return run ID."""
         dispatch_time = time.time()
+
+        matrix_entries = test_definition.to_matrix_entries()
+        matrix_json = json.dumps([entry.model_dump() for entry in matrix_entries])
 
         async with aiohttp.ClientSession() as session:
             url = (
@@ -43,18 +46,10 @@ class GitHubProvider(PipelineProvider):
             }
             inputs = {
                 "scanner_id": scanner_id,
-                "test_name": test.name,
-                "test_type": test.type,
-                "source_url": test.source.url,
-                "source_ref": test.source.ref,
                 "registry_ref": registry_ref,
                 "registry_repo": registry_repo,
-                "scan_paths": json.dumps(test.scan_paths),
-                "timeout": test.timeout,
+                "matrix_tests": matrix_json,
             }
-
-            if test.scan_configs is not None:
-                inputs["scan_configs"] = json.dumps(test.scan_configs)
 
             payload = {
                 "ref": self.config.ref,
@@ -70,72 +65,92 @@ class GitHubProvider(PipelineProvider):
 
         await asyncio.sleep(5)
 
-        run_id = await self._find_workflow_run(dispatch_time, scanner_id, test.name)
+        run_id = await self._find_workflow_run(dispatch_time, scanner_id)
         return run_id
 
-    async def poll_status(self, run_id: str) -> tuple[bool, TestResult]:
-        """Check if test run is complete and get result."""
+    async def poll_status(self, run_id: str) -> tuple[bool, list[TestResult]]:
+        """Check if all matrix jobs are complete and get results."""
         async with aiohttp.ClientSession() as session:
-            url = (
+            run_url = (
                 f"{self.base_url}/repos/{self.config.owner}/{self.config.repo}/"
                 f"actions/runs/{run_id}"
+            )
+            jobs_url = (
+                f"{self.base_url}/repos/{self.config.owner}/{self.config.repo}/"
+                f"actions/runs/{run_id}/jobs"
             )
             headers = {
                 "Authorization": f"Bearer {self.config.token}",
                 "Accept": "application/vnd.github+json",
             }
 
-            async with session.get(url, headers=headers) as response:
+            async with session.get(run_url, headers=headers) as response:
                 if response.status != 200:
                     text = await response.text()
                     raise RuntimeError(
                         f"Failed to get workflow run: {response.status} {text}"
                     )
+                run_data: Mapping[str, object] = await response.json()
 
-                data: Mapping[str, object] = await response.json()
+            async with session.get(jobs_url, headers=headers) as response:
+                if response.status != 200:  # pragma: no cover
+                    text = await response.text()
+                    raise RuntimeError(
+                        f"Failed to get workflow jobs: {response.status} {text}"
+                    )
+                jobs_data: Mapping[str, object] = await response.json()
 
-        status_str = data.get("status")
-        conclusion_str = data.get("conclusion")
-        html_url = str(data.get("html_url", ""))
+        status_str = run_data.get("status")
+        html_url = str(run_data.get("html_url", ""))
 
         is_complete = status_str == "completed"
 
         if not is_complete:
+            return (False, [])
+
+        jobs = jobs_data.get("jobs", [])
+        if not isinstance(jobs, list):  # pragma: no cover
+            return (True, [])
+
+        results: list[TestResult] = []
+        for job in jobs:
+            if not isinstance(job, dict):  # pragma: no cover
+                continue
+
+            job_name = str(job.get("name", ""))
+            if not job_name.startswith("run-tests"):  # pragma: no cover
+                continue
+
+            duration = self._calculate_job_duration(job)
+            conclusion = str(job.get("conclusion", ""))
+            test_status = self._map_conclusion(conclusion)
+
+            test_name = self._extract_test_name_from_job(job_name)
             result = TestResult(
                 provider="github",
-                scanner="unknown",
-                test_name="unknown",
-                status="error",
-                duration=0.0,
+                scanner="",
+                test_name=test_name,
+                status=test_status,
+                duration=duration,
                 run_url=html_url,
             )
-            return (False, result)
+            results.append(result)
 
-        # Calculate duration from workflow run timestamps
-        duration = self._calculate_duration(data)
-        test_status = self._map_conclusion(str(conclusion_str))
+        return (True, results)
 
-        result = TestResult(
-            provider="github",
-            scanner="unknown",
-            test_name="unknown",
-            status=test_status,
-            duration=duration,
-            run_url=html_url,
-        )
+    def _extract_test_name_from_job(self, job_name: str) -> str:
+        """Extract test name from job name."""
+        parts = job_name.split("(")
+        if len(parts) > 1:
+            test_info = parts[1].rstrip(")")
+            return test_info.split(",")[0].strip()
+        return "unknown"  # pragma: no cover
 
-        return (True, result)
-
-    async def _find_workflow_run(
-        self, dispatch_time: float, scanner_id: str, test_name: str
-    ) -> str:
-        """Find the workflow run that was just dispatched.
-
-        Matches runs by time window and scanner_id in display_title.
-        """
+    async def _find_workflow_run(self, dispatch_time: float, scanner_id: str) -> str:
+        """Find the workflow run that was just dispatched."""
         for attempt in range(10):
             runs = await self._fetch_recent_runs()
-            run_id = self._find_matching_run(runs, dispatch_time, scanner_id, test_name)
+            run_id = self._find_matching_run(runs, dispatch_time, scanner_id)
 
             if run_id:
                 return run_id
@@ -170,8 +185,8 @@ class GitHubProvider(PipelineProvider):
         runs = data.get("workflow_runs", [])
         return runs if isinstance(runs, list) else []
 
-    def _is_matching_run(self, run: object, scanner_id: str, test_name: str) -> bool:
-        """Check if run matches scanner_id and test_name in display_title."""
+    def _is_matching_run(self, run: object, scanner_id: str) -> bool:
+        """Check if run matches scanner_id in display_title."""
         if not isinstance(run, dict):
             return False
 
@@ -185,29 +200,18 @@ class GitHubProvider(PipelineProvider):
         if scanner_id not in display_title:
             return False
 
-        if test_name not in display_title:
-            return False
-
         return True
 
     def _find_matching_run(
-        self, runs: list[object], dispatch_time: float, scanner_id: str, test_name: str
+        self, runs: list[object], dispatch_time: float, scanner_id: str
     ) -> str | None:
-        """Find a run that matches the dispatch time and scanner_id.
-
-        Matches by:
-        1. Time window (within 60 seconds of dispatch)
-        2. Scanner ID in display_title
-        3. Test name in display_title (for additional precision)
-        """
+        """Find a run that matches the dispatch time and scanner_id."""
         from datetime import datetime
 
         for run in runs:
-            if not self._is_matching_run(run, scanner_id, test_name):
+            if not self._is_matching_run(run, scanner_id):
                 continue
 
-            # At this point, run is guaranteed to be a dict by _is_matching_run
-            # Check time window
             created_at = run.get("created_at")  # type: ignore[attr-defined]
             if not isinstance(created_at, str):
                 continue
@@ -223,29 +227,21 @@ class GitHubProvider(PipelineProvider):
 
         return None
 
-    def _calculate_duration(self, data: Mapping[str, object]) -> float:
-        """Calculate workflow run duration from timestamps.
-
-        Args:
-            data: Workflow run data from GitHub API
-
-        Returns:
-            Duration in seconds, or 0.0 if timestamps unavailable
-
-        """
+    def _calculate_job_duration(self, job: Mapping[str, object]) -> float:
+        """Calculate job duration from timestamps."""
         from datetime import datetime
 
-        created_at = data.get("created_at")
-        updated_at = data.get("updated_at")
+        started_at = job.get("started_at")
+        completed_at = job.get("completed_at")
 
-        if not isinstance(created_at, str) or not isinstance(updated_at, str):
+        if not isinstance(started_at, str) or not isinstance(completed_at, str):
             return 0.0
 
         try:
-            created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-            updated = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
-            duration = (updated - created).total_seconds()
-            return max(0.0, duration)  # Ensure non-negative
+            started = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+            completed = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
+            duration = (completed - started).total_seconds()
+            return max(0.0, duration)
         except (ValueError, AttributeError):
             return 0.0
 

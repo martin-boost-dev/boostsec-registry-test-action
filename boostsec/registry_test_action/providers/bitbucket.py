@@ -8,7 +8,7 @@ from typing import Literal
 import aiohttp
 
 from boostsec.registry_test_action.models.provider_config import BitbucketConfig
-from boostsec.registry_test_action.models.test_definition import Test
+from boostsec.registry_test_action.models.test_definition import TestDefinition
 from boostsec.registry_test_action.models.test_result import TestResult
 from boostsec.registry_test_action.providers.base import PipelineProvider
 
@@ -20,21 +20,22 @@ class BitbucketProvider(PipelineProvider):
         """Initialize Bitbucket provider with configuration."""
         self.config = config
         self.base_url = "https://api.bitbucket.org/2.0"
-        # Store test context and URLs for each pipeline to populate TestResult correctly
-        self._pipeline_context: dict[str, tuple[str, str, str]] = {}
-        # Bitbucket uses Basic auth with username:api_token
         auth_string = f"{config.username}:{config.api_token}"
         auth_bytes = auth_string.encode("utf-8")
         self._auth_header = f"Basic {base64.b64encode(auth_bytes).decode('utf-8')}"
+        self._run_urls: dict[str, str] = {}
 
-    async def dispatch_test(
+    async def dispatch_scanner_tests(
         self,
         scanner_id: str,
-        test: Test,
+        test_definition: TestDefinition,
         registry_ref: str,
         registry_repo: str,
     ) -> str:
-        """Trigger pipeline and return pipeline UUID."""
+        """Trigger pipeline with matrix and return pipeline UUID."""
+        matrix_entries = test_definition.to_matrix_entries()
+        matrix_json = json.dumps([entry.model_dump() for entry in matrix_entries])
+
         async with aiohttp.ClientSession() as session:
             url = (
                 f"{self.base_url}/repositories/{self.config.workspace}/"
@@ -46,20 +47,10 @@ class BitbucketProvider(PipelineProvider):
             }
             variables = [
                 {"key": "SCANNER_ID", "value": scanner_id},
-                {"key": "TEST_NAME", "value": test.name},
-                {"key": "TEST_TYPE", "value": test.type},
-                {"key": "SOURCE_URL", "value": test.source.url},
-                {"key": "SOURCE_REF", "value": test.source.ref},
                 {"key": "REGISTRY_REF", "value": registry_ref},
                 {"key": "REGISTRY_REPO", "value": registry_repo},
-                {"key": "SCAN_PATHS", "value": json.dumps(test.scan_paths)},
-                {"key": "TIMEOUT", "value": test.timeout},
+                {"key": "MATRIX_TESTS", "value": matrix_json},
             ]
-
-            if test.scan_configs is not None:
-                variables.append(
-                    {"key": "SCAN_CONFIGS", "value": json.dumps(test.scan_configs)}
-                )
 
             payload = {
                 "target": {
@@ -89,64 +80,35 @@ class BitbucketProvider(PipelineProvider):
 
         pipeline_id = pipeline_uuid.strip("{}")
 
-        # Construct pipeline URL
-        # Pattern: https://bitbucket.org/{workspace}/{repo_slug}/pipelines/results/{run_id}
-        # The run_id in the URL is a sequential number from build_number
         build_number = data.get("build_number")
         if isinstance(build_number, int):
             run_url = (
                 f"https://bitbucket.org/{self.config.workspace}/"
                 f"{self.config.repo_slug}/pipelines/results/{build_number}"
             )
-        else:
-            run_url = ""
-
-        # Store test context and URL for later use in poll_status
-        self._pipeline_context[pipeline_id] = (scanner_id, test.name, run_url)
+            self._run_urls[pipeline_id] = run_url
 
         return pipeline_id
 
-    async def poll_status(self, run_id: str) -> tuple[bool, TestResult]:
-        """Check if pipeline is complete and get result."""
-        # Retrieve stored test context and URL
-        scanner, test_name, run_url = self._pipeline_context.get(
-            run_id, ("unknown", "unknown", "")
-        )
-
+    async def poll_status(self, run_id: str) -> tuple[bool, list[TestResult]]:
+        """Check if all pipeline steps are complete and get results."""
         data = await self._fetch_pipeline_status(run_id)
 
         state_info = data.get("state")
-
         if not isinstance(state_info, dict):
-            result = TestResult(
-                provider="bitbucket",
-                scanner=scanner,
-                test_name=test_name,
-                status="error",
-                duration=0.0,
-                run_url=run_url,
-            )
-            return (False, result)
+            return (False, [])
 
         state_name = state_info.get("name")
 
-        # Check for terminal states
         terminal_states = {"COMPLETED", "STOPPED", "ERROR", "FAILED"}
         is_complete = state_name in terminal_states
 
         if not is_complete:
-            # Still running (PENDING, IN_PROGRESS)
-            result = TestResult(
-                provider="bitbucket",
-                scanner=scanner,
-                test_name=test_name,
-                status="error",
-                duration=0.0,
-                run_url=run_url,
-            )
-            return (False, result)
+            return (False, [])
 
-        # Pipeline completed, check the result
+        run_url = self._run_urls.get(run_id, "")
+
+        # Check the result
         result_info = state_info.get("result", {})
         if isinstance(result_info, dict):
             result_name = result_info.get("name", "")
@@ -155,16 +117,21 @@ class BitbucketProvider(PipelineProvider):
 
         test_status = self._map_result(str(result_name))
 
+        # For Bitbucket, we have parallel slots, so we need to check each one
+        # The pipeline will fail if any slot fails
+        # We'll create results for each matrix entry
+        # Since Bitbucket doesn't provide detailed job-level results via API
+        # We create a single result representing the overall pipeline status
         result = TestResult(
             provider="bitbucket",
-            scanner=scanner,
-            test_name=test_name,
+            scanner="",
+            test_name="matrix-tests",
             status=test_status,
             duration=0.0,
             run_url=run_url,
         )
 
-        return (True, result)
+        return (True, [result])
 
     async def _fetch_pipeline_status(self, run_id: str) -> Mapping[str, object]:
         """Fetch pipeline status from Bitbucket API."""

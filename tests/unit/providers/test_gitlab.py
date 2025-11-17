@@ -4,7 +4,11 @@ import pytest
 from aioresponses import aioresponses
 
 from boostsec.registry_test_action.models.provider_config import GitLabConfig
-from boostsec.registry_test_action.models.test_definition import Test, TestSource
+from boostsec.registry_test_action.models.test_definition import (
+    Test,
+    TestDefinition,
+    TestSource,
+)
 from boostsec.registry_test_action.providers.gitlab import GitLabProvider
 
 
@@ -19,23 +23,28 @@ def gitlab_config() -> GitLabConfig:
 
 
 @pytest.fixture
-def test_definition() -> Test:
+def test_definition() -> TestDefinition:
     """Create test definition."""
-    return Test(
-        name="smoke test",
-        type="source-code",
-        source=TestSource(
-            url="https://github.com/OWASP/NodeGoat.git",
-            ref="main",
-        ),
-        scan_paths=["."],
+    return TestDefinition(
+        version="1.0",
+        tests=[
+            Test(
+                name="smoke test",
+                type="source-code",
+                source=TestSource(
+                    url="https://github.com/OWASP/NodeGoat.git",
+                    ref="main",
+                ),
+                scan_paths=["."],
+            )
+        ],
     )
 
 
-async def test_dispatch_test_success(
-    gitlab_config: GitLabConfig, test_definition: Test
+async def test_dispatch_scanner_tests_success(
+    gitlab_config: GitLabConfig, test_definition: TestDefinition
 ) -> None:
-    """dispatch_test successfully creates pipeline using project access token."""
+    """dispatch_scanner_tests successfully creates pipeline using project access token."""
     provider = GitLabProvider(gitlab_config)
 
     with aioresponses() as m:
@@ -45,7 +54,7 @@ async def test_dispatch_test_success(
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
 
-        pipeline_id = await provider.dispatch_test(
+        pipeline_id = await provider.dispatch_scanner_tests(
             "boostsecurityio/trivy-fs",
             test_definition,
             "main",
@@ -53,24 +62,26 @@ async def test_dispatch_test_success(
         )
 
     assert pipeline_id == "789"
-    # Verify context was stored
-    assert provider._pipeline_context["789"] == (
-        "boostsecurityio/trivy-fs",
-        "smoke test",
-    )
 
 
-async def test_dispatch_test_with_scan_configs(gitlab_config: GitLabConfig) -> None:
-    """dispatch_test includes scan_configs when provided."""
-    test_with_configs = Test(
-        name="config test",
-        type="source-code",
-        source=TestSource(
-            url="https://github.com/OWASP/NodeGoat.git",
-            ref="main",
-        ),
-        scan_paths=["."],
-        scan_configs=[{"key": "value"}],
+async def test_dispatch_scanner_tests_with_scan_configs(
+    gitlab_config: GitLabConfig,
+) -> None:
+    """dispatch_scanner_tests includes scan_configs when provided."""
+    test_def_with_configs = TestDefinition(
+        version="1.0",
+        tests=[
+            Test(
+                name="config test",
+                type="source-code",
+                source=TestSource(
+                    url="https://github.com/OWASP/NodeGoat.git",
+                    ref="main",
+                ),
+                scan_paths=["."],
+                scan_configs=[{"key": "value"}],
+            )
+        ],
     )
 
     provider = GitLabProvider(gitlab_config)
@@ -82,9 +93,9 @@ async def test_dispatch_test_with_scan_configs(gitlab_config: GitLabConfig) -> N
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
 
-        pipeline_id = await provider.dispatch_test(
+        pipeline_id = await provider.dispatch_scanner_tests(
             "boostsecurityio/trivy-fs",
-            test_with_configs,
+            test_def_with_configs,
             "main",
             "test/registry",
         )
@@ -92,10 +103,10 @@ async def test_dispatch_test_with_scan_configs(gitlab_config: GitLabConfig) -> N
     assert pipeline_id == "789"
 
 
-async def test_dispatch_test_failure(
-    gitlab_config: GitLabConfig, test_definition: Test
+async def test_dispatch_scanner_tests_failure(
+    gitlab_config: GitLabConfig, test_definition: TestDefinition
 ) -> None:
-    """dispatch_test raises RuntimeError on API failure."""
+    """dispatch_scanner_tests raises RuntimeError on API failure."""
     provider = GitLabProvider(gitlab_config)
 
     with aioresponses() as m:
@@ -106,7 +117,7 @@ async def test_dispatch_test_failure(
         )
 
         with pytest.raises(RuntimeError, match="Failed to create pipeline"):
-            await provider.dispatch_test(
+            await provider.dispatch_scanner_tests(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
@@ -114,10 +125,10 @@ async def test_dispatch_test_failure(
             )
 
 
-async def test_dispatch_test_missing_pipeline_id(
-    gitlab_config: GitLabConfig, test_definition: Test
+async def test_dispatch_scanner_tests_missing_pipeline_id(
+    gitlab_config: GitLabConfig, test_definition: TestDefinition
 ) -> None:
-    """dispatch_test raises RuntimeError when pipeline ID is missing."""
+    """dispatch_scanner_tests raises RuntimeError when pipeline ID is missing."""
     provider = GitLabProvider(gitlab_config)
 
     with aioresponses() as m:
@@ -128,7 +139,7 @@ async def test_dispatch_test_missing_pipeline_id(
         )
 
         with pytest.raises(RuntimeError, match="Pipeline ID not found"):
-            await provider.dispatch_test(
+            await provider.dispatch_scanner_tests(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
@@ -136,27 +147,10 @@ async def test_dispatch_test_missing_pipeline_id(
             )
 
 
-async def test_poll_status_running(
-    gitlab_config: GitLabConfig, test_definition: Test
-) -> None:
+async def test_poll_status_running(gitlab_config: GitLabConfig) -> None:
     """poll_status returns not complete when pipeline is running."""
     provider = GitLabProvider(gitlab_config)
 
-    # First dispatch to set up context
-    with aioresponses() as m:
-        m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
-            status=201,
-            payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
-        )
-        await provider.dispatch_test(
-            "boostsecurityio/trivy-fs",
-            test_definition,
-            "main",
-            "test/registry",
-        )
-
-    # Now poll status
     with aioresponses() as m:
         m.get(
             f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
@@ -166,37 +160,22 @@ async def test_poll_status_running(
                 "web_url": "https://gitlab.com/project/pipelines/789",
             },
         )
+        m.get(
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
+            "pipelines/789/jobs",
+            payload=[],
+        )
 
-        is_complete, result = await provider.poll_status("789")
+        is_complete, results = await provider.poll_status("789")
 
     assert is_complete is False
-    assert result.provider == "gitlab"
-    assert result.scanner == "boostsecurityio/trivy-fs"
-    assert result.test_name == "smoke test"
-    assert result.status == "error"
+    assert results == []
 
 
-async def test_poll_status_completed_success(
-    gitlab_config: GitLabConfig, test_definition: Test
-) -> None:
+async def test_poll_status_completed_success(gitlab_config: GitLabConfig) -> None:
     """poll_status returns complete with success status."""
     provider = GitLabProvider(gitlab_config)
 
-    # First dispatch to set up context
-    with aioresponses() as m:
-        m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
-            status=201,
-            payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
-        )
-        await provider.dispatch_test(
-            "boostsecurityio/trivy-fs",
-            test_definition,
-            "main",
-            "test/registry",
-        )
-
-    # Now poll status
     with aioresponses() as m:
         m.get(
             f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
@@ -206,37 +185,32 @@ async def test_poll_status_completed_success(
                 "web_url": "https://gitlab.com/project/pipelines/789",
             },
         )
+        m.get(
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
+            "pipelines/789/jobs",
+            payload=[
+                {
+                    "name": "run-test-smoke-test",
+                    "status": "success",
+                    "started_at": "2099-01-01T12:00:00Z",
+                    "finished_at": "2099-01-01T12:01:30Z",
+                }
+            ],
+        )
 
-        is_complete, result = await provider.poll_status("789")
+        is_complete, results = await provider.poll_status("789")
 
     assert is_complete is True
-    assert result.status == "success"
-    assert result.provider == "gitlab"
-    assert result.scanner == "boostsecurityio/trivy-fs"
-    assert result.test_name == "smoke test"
+    assert len(results) == 1
+    assert results[0].status == "success"
+    assert results[0].provider == "gitlab"
+    assert results[0].test_name == "smoke-test"
 
 
-async def test_poll_status_completed_failure(
-    gitlab_config: GitLabConfig, test_definition: Test
-) -> None:
+async def test_poll_status_completed_failure(gitlab_config: GitLabConfig) -> None:
     """poll_status returns complete with failure status."""
     provider = GitLabProvider(gitlab_config)
 
-    # First dispatch to set up context
-    with aioresponses() as m:
-        m.post(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/pipeline",
-            status=201,
-            payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
-        )
-        await provider.dispatch_test(
-            "boostsecurityio/trivy-fs",
-            test_definition,
-            "main",
-            "test/registry",
-        )
-
-    # Now poll status
     with aioresponses() as m:
         m.get(
             f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
@@ -246,13 +220,25 @@ async def test_poll_status_completed_failure(
                 "web_url": "https://gitlab.com/project/pipelines/789",
             },
         )
+        m.get(
+            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
+            "pipelines/789/jobs",
+            payload=[
+                {
+                    "name": "run-test-smoke-test",
+                    "status": "failed",
+                    "started_at": "2099-01-01T12:00:00Z",
+                    "finished_at": "2099-01-01T12:01:30Z",
+                }
+            ],
+        )
 
-        is_complete, result = await provider.poll_status("789")
+        is_complete, results = await provider.poll_status("789")
 
     assert is_complete is True
-    assert result.status == "failure"
-    assert result.scanner == "boostsecurityio/trivy-fs"
-    assert result.test_name == "smoke test"
+    assert len(results) == 1
+    assert results[0].status == "failure"
+    assert results[0].test_name == "smoke-test"
 
 
 async def test_poll_status_api_error(gitlab_config: GitLabConfig) -> None:
@@ -283,9 +269,10 @@ async def test_map_status_all_statuses(gitlab_config: GitLabConfig) -> None:
     assert provider._map_status("unknown") == "error"
 
 
-async def test_dispatch_test_with_project_path(test_definition: Test) -> None:
-    """dispatch_test URL-encodes project path for API calls."""
-    # Use project path instead of numeric ID
+async def test_dispatch_scanner_tests_with_project_path(
+    test_definition: TestDefinition,
+) -> None:
+    """dispatch_scanner_tests URL-encodes project path for API calls."""
     config = GitLabConfig(
         token="glpat-test123",
         project_id="boostsecurityio/martin/boostsec-registry-test-runner",
@@ -293,21 +280,19 @@ async def test_dispatch_test_with_project_path(test_definition: Test) -> None:
     )
     provider = GitLabProvider(config)
 
-    # Verify project_id is URL-encoded
     assert (
         provider._encoded_project_id
         == "boostsecurityio%2Fmartin%2Fboostsec-registry-test-runner"
     )
 
     with aioresponses() as m:
-        # Mock with URL-encoded path
         m.post(
             "https://gitlab.com/api/v4/projects/boostsecurityio%2Fmartin%2Fboostsec-registry-test-runner/pipeline",
             status=201,
             payload={"id": 789, "web_url": "https://gitlab.com/project/pipelines/789"},
         )
 
-        pipeline_id = await provider.dispatch_test(
+        pipeline_id = await provider.dispatch_scanner_tests(
             "boostsecurityio/trivy-fs",
             test_definition,
             "main",

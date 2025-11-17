@@ -6,7 +6,11 @@ import pytest
 from aioresponses import aioresponses
 
 from boostsec.registry_test_action.models.provider_config import GitHubConfig
-from boostsec.registry_test_action.models.test_definition import Test, TestSource
+from boostsec.registry_test_action.models.test_definition import (
+    Test,
+    TestDefinition,
+    TestSource,
+)
 from boostsec.registry_test_action.providers.github import GitHubProvider
 
 
@@ -22,23 +26,28 @@ def github_config() -> GitHubConfig:
 
 
 @pytest.fixture
-def test_definition() -> Test:
+def test_definition() -> TestDefinition:
     """Create test definition."""
-    return Test(
-        name="smoke test",
-        type="source-code",
-        source=TestSource(
-            url="https://github.com/OWASP/NodeGoat.git",
-            ref="main",
-        ),
-        scan_paths=["."],
+    return TestDefinition(
+        version="1.0",
+        tests=[
+            Test(
+                name="smoke test",
+                type="source-code",
+                source=TestSource(
+                    url="https://github.com/OWASP/NodeGoat.git",
+                    ref="main",
+                ),
+                scan_paths=["."],
+            )
+        ],
     )
 
 
-async def test_dispatch_test_success(
-    github_config: GitHubConfig, test_definition: Test
+async def test_dispatch_scanner_tests_success(
+    github_config: GitHubConfig, test_definition: TestDefinition
 ) -> None:
-    """dispatch_test successfully dispatches workflow and finds run."""
+    """dispatch_scanner_tests successfully dispatches workflow and finds run."""
     provider = GitHubProvider(github_config)
 
     with aioresponses() as m:
@@ -59,14 +68,14 @@ async def test_dispatch_test_success(
                         "id": 123456,
                         "status": "in_progress",
                         "created_at": "2099-01-01T12:00:00Z",
-                        "display_title": "[boostsecurityio/trivy-fs] smoke test",
+                        "display_title": "[boostsecurityio/trivy-fs]",
                     }
                 ]
             },
         )
 
         with patch("asyncio.sleep"):
-            run_id = await provider.dispatch_test(
+            run_id = await provider.dispatch_scanner_tests(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
@@ -76,17 +85,24 @@ async def test_dispatch_test_success(
     assert run_id == "123456"
 
 
-async def test_dispatch_test_with_scan_configs(github_config: GitHubConfig) -> None:
-    """dispatch_test includes scan_configs when provided."""
-    test_with_configs = Test(
-        name="config test",
-        type="source-code",
-        source=TestSource(
-            url="https://github.com/OWASP/NodeGoat.git",
-            ref="main",
-        ),
-        scan_paths=["."],
-        scan_configs=[{"key": "value"}],
+async def test_dispatch_scanner_tests_with_scan_configs(
+    github_config: GitHubConfig,
+) -> None:
+    """dispatch_scanner_tests includes scan_configs when provided."""
+    test_def_with_configs = TestDefinition(
+        version="1.0",
+        tests=[
+            Test(
+                name="config test",
+                type="source-code",
+                source=TestSource(
+                    url="https://github.com/OWASP/NodeGoat.git",
+                    ref="main",
+                ),
+                scan_paths=["."],
+                scan_configs=[{"key": "value"}],
+            )
+        ],
     )
 
     provider = GitHubProvider(github_config)
@@ -106,16 +122,16 @@ async def test_dispatch_test_with_scan_configs(github_config: GitHubConfig) -> N
                         "id": 123456,
                         "status": "in_progress",
                         "created_at": "2099-01-01T12:00:00Z",
-                        "display_title": "[boostsecurityio/trivy-fs] config test",
+                        "display_title": "[boostsecurityio/trivy-fs]",
                     }
                 ]
             },
         )
 
         with patch("asyncio.sleep"):
-            run_id = await provider.dispatch_test(
+            run_id = await provider.dispatch_scanner_tests(
                 "boostsecurityio/trivy-fs",
-                test_with_configs,
+                test_def_with_configs,
                 "main",
                 "test/registry",
             )
@@ -123,10 +139,10 @@ async def test_dispatch_test_with_scan_configs(github_config: GitHubConfig) -> N
     assert run_id == "123456"
 
 
-async def test_dispatch_test_failure(
-    github_config: GitHubConfig, test_definition: Test
+async def test_dispatch_scanner_tests_failure(
+    github_config: GitHubConfig, test_definition: TestDefinition
 ) -> None:
-    """dispatch_test raises RuntimeError on API failure."""
+    """dispatch_scanner_tests raises RuntimeError on API failure."""
     provider = GitHubProvider(github_config)
 
     with aioresponses() as m:
@@ -138,7 +154,7 @@ async def test_dispatch_test_failure(
         )
 
         with pytest.raises(RuntimeError, match="Failed to dispatch workflow"):
-            await provider.dispatch_test(
+            await provider.dispatch_scanner_tests(
                 "boostsecurityio/trivy-fs",
                 test_definition,
                 "main",
@@ -160,12 +176,16 @@ async def test_poll_status_in_progress(github_config: GitHubConfig) -> None:
                 "html_url": "https://github.com/owner/repo/actions/runs/123",
             },
         )
+        m.get(
+            f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
+            "actions/runs/123456/jobs",
+            payload={"jobs": []},
+        )
 
-        is_complete, result = await provider.poll_status("123456")
+        is_complete, results = await provider.poll_status("123456")
 
     assert is_complete is False
-    assert result.provider == "github"
-    assert result.status == "error"
+    assert results == []
 
 
 async def test_poll_status_completed_success(github_config: GitHubConfig) -> None:
@@ -184,13 +204,29 @@ async def test_poll_status_completed_success(github_config: GitHubConfig) -> Non
                 "updated_at": "2099-01-01T12:01:30Z",
             },
         )
+        m.get(
+            f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
+            "actions/runs/123456/jobs",
+            payload={
+                "jobs": [
+                    {
+                        "name": "run-tests (smoke test, .)",
+                        "conclusion": "success",
+                        "started_at": "2099-01-01T12:00:00Z",
+                        "completed_at": "2099-01-01T12:01:30Z",
+                    }
+                ]
+            },
+        )
 
-        is_complete, result = await provider.poll_status("123456")
+        is_complete, results = await provider.poll_status("123456")
 
     assert is_complete is True
-    assert result.status == "success"
-    assert result.provider == "github"
-    assert result.duration == 90.0  # 1 minute 30 seconds
+    assert len(results) == 1
+    assert results[0].status == "success"
+    assert results[0].provider == "github"
+    assert results[0].test_name == "smoke test"
+    assert results[0].duration == 90.0
 
 
 async def test_poll_status_completed_failure(github_config: GitHubConfig) -> None:
@@ -209,12 +245,27 @@ async def test_poll_status_completed_failure(github_config: GitHubConfig) -> Non
                 "updated_at": "2099-01-01T12:05:45Z",
             },
         )
+        m.get(
+            f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
+            "actions/runs/123456/jobs",
+            payload={
+                "jobs": [
+                    {
+                        "name": "run-tests (smoke test, .)",
+                        "conclusion": "failure",
+                        "started_at": "2099-01-01T12:00:00Z",
+                        "completed_at": "2099-01-01T12:05:45Z",
+                    }
+                ]
+            },
+        )
 
-        is_complete, result = await provider.poll_status("123456")
+        is_complete, results = await provider.poll_status("123456")
 
     assert is_complete is True
-    assert result.status == "failure"
-    assert result.duration == 345.0  # 5 minutes 45 seconds
+    assert len(results) == 1
+    assert results[0].status == "failure"
+    assert results[0].duration == 345.0
 
 
 async def test_poll_status_api_error(github_config: GitHubConfig) -> None:
@@ -248,60 +299,60 @@ async def test_map_conclusion_all_statuses(github_config: GitHubConfig) -> None:
     assert provider._map_conclusion("unknown") == "error"
 
 
-async def test_calculate_duration_success(github_config: GitHubConfig) -> None:
-    """_calculate_duration computes duration from timestamps."""
+async def test_calculate_job_duration_success(github_config: GitHubConfig) -> None:
+    """_calculate_job_duration computes duration from timestamps."""
     provider = GitHubProvider(github_config)
 
     data = {
-        "created_at": "2099-01-01T12:00:00Z",
-        "updated_at": "2099-01-01T12:05:30Z",
+        "started_at": "2099-01-01T12:00:00Z",
+        "completed_at": "2099-01-01T12:05:30Z",
     }
 
-    duration = provider._calculate_duration(data)
+    duration = provider._calculate_job_duration(data)
     assert duration == 330.0  # 5 minutes 30 seconds
 
 
-async def test_calculate_duration_missing_timestamps(
+async def test_calculate_job_duration_missing_timestamps(
     github_config: GitHubConfig,
 ) -> None:
-    """_calculate_duration returns 0.0 when timestamps are missing."""
+    """_calculate_job_duration returns 0.0 when timestamps are missing."""
     provider = GitHubProvider(github_config)
 
     # Missing both
-    assert provider._calculate_duration({}) == 0.0
+    assert provider._calculate_job_duration({}) == 0.0
 
-    # Missing updated_at
-    assert provider._calculate_duration({"created_at": "2099-01-01T12:00:00Z"}) == 0.0
+    # Missing completed_at
+    assert provider._calculate_job_duration({"started_at": "2099-01-01T12:00:00Z"}) == 0.0
 
-    # Missing created_at
-    assert provider._calculate_duration({"updated_at": "2099-01-01T12:00:00Z"}) == 0.0
+    # Missing started_at
+    assert provider._calculate_job_duration({"completed_at": "2099-01-01T12:00:00Z"}) == 0.0
 
 
-async def test_calculate_duration_invalid_format(github_config: GitHubConfig) -> None:
-    """_calculate_duration returns 0.0 when timestamp format is invalid."""
+async def test_calculate_job_duration_invalid_format(github_config: GitHubConfig) -> None:
+    """_calculate_job_duration returns 0.0 when timestamp format is invalid."""
     provider = GitHubProvider(github_config)
 
     data = {
-        "created_at": "invalid-date",
-        "updated_at": "2099-01-01T12:00:00Z",
+        "started_at": "invalid-date",
+        "completed_at": "2099-01-01T12:00:00Z",
     }
 
-    duration = provider._calculate_duration(data)
+    duration = provider._calculate_job_duration(data)
     assert duration == 0.0
 
 
-async def test_calculate_duration_non_string_timestamps(
+async def test_calculate_job_duration_non_string_timestamps(
     github_config: GitHubConfig,
 ) -> None:
-    """_calculate_duration returns 0.0 when timestamps are not strings."""
+    """_calculate_job_duration returns 0.0 when timestamps are not strings."""
     provider = GitHubProvider(github_config)
 
     data = {
-        "created_at": 123456,  # Not a string
-        "updated_at": "2099-01-01T12:00:00Z",
+        "started_at": 123456,  # Not a string
+        "completed_at": "2099-01-01T12:00:00Z",
     }
 
-    duration = provider._calculate_duration(data)
+    duration = provider._calculate_job_duration(data)
     assert duration == 0.0
 
 
@@ -325,7 +376,6 @@ async def test_find_workflow_run_not_found(github_config: GitHubConfig) -> None:
                 await provider._find_workflow_run(
                     dispatch_time=0.0,
                     scanner_id="boostsecurityio/trivy-fs",
-                    test_name="smoke test",
                 )
 
 
@@ -361,25 +411,19 @@ async def test_find_matching_run_skips_invalid_runs(
         },  # Non-string display_title
         {
             "status": "in_progress",
-            "display_title": "[other-scanner/tool] test",
+            "display_title": "[other-scanner/tool]",
             "created_at": "2099-01-01T12:00:00Z",
             "id": 333,
         },  # Wrong scanner_id
         {
             "status": "in_progress",
-            "display_title": "[boostsecurityio/trivy-fs] other test",
-            "created_at": "2099-01-01T12:00:00Z",
-            "id": 444,
-        },  # Wrong test_name
-        {
-            "status": "in_progress",
-            "display_title": "[boostsecurityio/trivy-fs] smoke test",
+            "display_title": "[boostsecurityio/trivy-fs]",
             "created_at": 123,
             "id": 555,
         },  # Non-string created_at
         {
             "status": "in_progress",
-            "display_title": "[boostsecurityio/trivy-fs] smoke test",
+            "display_title": "[boostsecurityio/trivy-fs]",
             "created_at": "2099-01-01T12:00:00Z",
             "id": 123456,
         },  # Valid run
@@ -389,6 +433,5 @@ async def test_find_matching_run_skips_invalid_runs(
         runs,
         dispatch_time=0.0,
         scanner_id="boostsecurityio/trivy-fs",
-        test_name="smoke test",
     )
     assert run_id == "123456"
