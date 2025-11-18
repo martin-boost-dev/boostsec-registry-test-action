@@ -737,6 +737,15 @@ make format lint test
    - WireMock responses must include `Content-Type: application/json` header (aiohttp requirement)
    - Workflow run timestamps should use future dates (e.g., 2099) to pass time window validation in tests
 
+8. **GitHub Actions Job Naming for Matrix Jobs**:
+   - GitHub Actions automatically formats matrix job names, but the format varies depending on which matrix values differ between jobs
+   - This makes parsing job names unreliable for extracting test information
+   - Solution: Add explicit `name` field to workflow job that includes both `test_name` and `scan_path`
+   - Format: `name: "${{ matrix.test_name }} [${{ matrix.scan_path }}]"`
+   - This ensures consistent, parseable job names like "Image scanning [.]" and "Image scanning [src]"
+   - Filter test jobs by checking for presence of "[" and "]" in job name
+   - Non-test jobs (e.g., "prepare-matrix") are automatically excluded
+
 ### Mistakes to Avoid
 
 1. **Don't use wall-clock time for test duration** - Always extract timing from the CI/CD provider's API response to get accurate execution time without polling overhead.
@@ -752,6 +761,8 @@ make format lint test
 6. **Don't forget Content-Type headers in WireMock** - aiohttp requires proper `Content-Type: application/json` header to parse JSON responses.
 
 7. **Don't use past timestamps in test mocks** - GitHub provider validates workflow runs were created within 60 seconds of dispatch; use future timestamps in tests.
+
+8. **Don't rely on GitHub's automatic matrix job naming** - GitHub Actions varies the job name format based on which matrix values differ, making parsing unreliable. Always use explicit job names with `name: "${{ matrix.var1 }} [${{ matrix.var2 }}]"` format.
 
 ### Testing Strategy
 

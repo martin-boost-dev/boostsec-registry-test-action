@@ -112,48 +112,45 @@ class GitHubProvider(PipelineProvider):
         if not isinstance(jobs, list):  # pragma: no cover
             return (True, [])
 
+        results = self._extract_test_results(jobs, html_url)
+        return (True, results)
+
+    def _extract_test_results(
+        self, jobs: list[object], html_url: str
+    ) -> list[TestResult]:
+        """Extract test results from workflow jobs."""
         results: list[TestResult] = []
         for job in jobs:
             if not isinstance(job, dict):  # pragma: no cover
                 continue
 
             job_name = str(job.get("name", ""))
-            if not job_name.startswith("run-tests"):  # pragma: no cover
+
+            # Filter out non-test jobs (e.g., prepare-matrix)
+            # Test jobs have format: "{test_name} [{scan_path}]"
+            if not self._is_test_job(job_name):  # pragma: no cover
                 continue
 
             duration = self._calculate_job_duration(job)
             conclusion = str(job.get("conclusion", ""))
             test_status = self._map_conclusion(conclusion)
 
-            test_name = self._extract_test_name_from_job(job_name)
+            # Job name is already in format "{test_name} [{scan_path}]"
             result = TestResult(
                 provider="github",
                 scanner="",
-                test_name=test_name,
+                test_name=job_name,
                 status=test_status,
                 duration=duration,
                 run_url=html_url,
             )
             results.append(result)
 
-        return (True, results)
+        return results
 
-    def _extract_test_name_from_job(self, job_name: str) -> str:
-        """Extract test name and scan path from job name.
-
-        GitHub formats matrix jobs as: job_name (var1, var2, ...)
-        Our matrix has: test_name, test_type, source_url, source_ref, scan_path, ...
-        """
-        parts = job_name.split("(")
-        if len(parts) > 1:
-            test_info = parts[1].rstrip(")")
-            values = [v.strip() for v in test_info.split(",")]
-            if len(values) >= 5:
-                test_name = values[0]
-                scan_path = values[4]
-                return f"{test_name} [{scan_path}]"
-            return values[0] if values else "unknown"  # pragma: no cover
-        return "unknown"  # pragma: no cover
+    def _is_test_job(self, job_name: str) -> bool:
+        """Check if a job name represents a test job."""
+        return "[" in job_name and "]" in job_name
 
     async def _find_workflow_run(self, dispatch_time: float, scanner_id: str) -> str:
         """Find the workflow run that was just dispatched."""

@@ -210,7 +210,7 @@ async def test_poll_status_completed_success(github_config: GitHubConfig) -> Non
             payload={
                 "jobs": [
                     {
-                        "name": "run-tests (smoke test, .)",
+                        "name": "smoke test [.]",
                         "conclusion": "success",
                         "started_at": "2099-01-01T12:00:00Z",
                         "completed_at": "2099-01-01T12:01:30Z",
@@ -225,7 +225,7 @@ async def test_poll_status_completed_success(github_config: GitHubConfig) -> Non
     assert len(results) == 1
     assert results[0].status == "success"
     assert results[0].provider == "github"
-    assert results[0].test_name == "smoke test"
+    assert results[0].test_name == "smoke test [.]"
     assert results[0].duration == 90.0
 
 
@@ -251,7 +251,7 @@ async def test_poll_status_completed_failure(github_config: GitHubConfig) -> Non
             payload={
                 "jobs": [
                     {
-                        "name": "run-tests (smoke test, .)",
+                        "name": "smoke test [.]",
                         "conclusion": "failure",
                         "started_at": "2099-01-01T12:00:00Z",
                         "completed_at": "2099-01-01T12:05:45Z",
@@ -265,6 +265,7 @@ async def test_poll_status_completed_failure(github_config: GitHubConfig) -> Non
     assert is_complete is True
     assert len(results) == 1
     assert results[0].status == "failure"
+    assert results[0].test_name == "smoke test [.]"
     assert results[0].duration == 345.0
 
 
@@ -442,24 +443,3 @@ async def test_find_matching_run_skips_invalid_runs(
         scanner_id="boostsecurityio/trivy-fs",
     )
     assert run_id == "123456"
-
-
-async def test_extract_test_name_with_full_matrix(github_config: GitHubConfig) -> None:
-    """Extract test name and scan path from full matrix format."""
-    provider = GitHubProvider(github_config)
-
-    # Full matrix format with all fields
-    job_name = (
-        "run-tests (smoke test, source-code, "
-        "https://github.com/OWASP/NodeGoat.git, main, src/app, 300s)"
-    )
-    result = provider._extract_test_name_from_job(job_name)
-    assert result == "smoke test [src/app]"
-
-    # Another test with different scan path
-    job_name2 = (
-        "run-tests (integration test, container-image, "
-        "https://github.com/test/repo.git, develop, ., 600s)"
-    )
-    result2 = provider._extract_test_name_from_job(job_name2)
-    assert result2 == "integration test [.]"
