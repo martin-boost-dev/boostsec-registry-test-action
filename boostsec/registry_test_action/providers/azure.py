@@ -71,16 +71,12 @@ class AzureDevOpsProvider(PipelineProvider):
         return str(run_id)
 
     async def poll_status(self, run_id: str) -> tuple[bool, list[TestResult]]:
-        """Check if all pipeline jobs are complete and get results."""
+        """Check if pipeline run is complete and get aggregated result."""
         async with aiohttp.ClientSession() as session:
             run_url = (
                 f"{self.base_url}/{self.config.organization}/{self.config.project}/"
                 f"_apis/pipelines/{self.config.pipeline_id}/runs/{run_id}"
                 "?api-version=7.1"
-            )
-            timeline_url = (
-                f"{self.base_url}/{self.config.organization}/{self.config.project}/"
-                f"_apis/build/builds/{run_id}/timeline?api-version=7.1"
             )
             headers = {
                 "Authorization": self._auth_header,
@@ -93,14 +89,6 @@ class AzureDevOpsProvider(PipelineProvider):
                         f"Failed to get pipeline run: {response.status} {text}"
                     )
                 run_data: Mapping[str, object] = await response.json()
-
-            async with session.get(timeline_url, headers=headers) as response:
-                if response.status != 200:  # pragma: no cover
-                    text = await response.text()
-                    raise RuntimeError(
-                        f"Failed to get pipeline timeline: {response.status} {text}"
-                    )
-                timeline_data: Mapping[str, object] = await response.json()
 
         state_str = run_data.get("state")
         web_url = ""
@@ -116,71 +104,44 @@ class AzureDevOpsProvider(PipelineProvider):
         if not is_complete:
             return (False, [])
 
-        records = timeline_data.get("records", [])
-        if not isinstance(records, list):  # pragma: no cover
-            return (True, [])
+        # Get overall pipeline result
+        result_str = str(run_data.get("result", ""))
+        test_status = self._map_result(result_str)
 
-        results: list[TestResult] = []
-        for record in records:
-            if not isinstance(record, dict):  # pragma: no cover
-                continue
+        # Get pipeline name
+        pipeline_name = str(run_data.get("name", ""))
 
-            record_type = str(record.get("type", ""))
-            if record_type != "Job":  # pragma: no cover
-                continue
+        # Calculate duration from run-level timestamps
+        duration = self._calculate_run_duration(run_data)
 
-            job_name = str(record.get("name", ""))
-            if not job_name.startswith("Run scanner"):  # pragma: no cover
-                continue
+        # Return single aggregated result for the entire pipeline run
+        result = TestResult(
+            provider="azure",
+            scanner="",
+            test_name=pipeline_name,
+            status=test_status,
+            duration=duration,
+            run_url=web_url,
+        )
 
-            result_str = str(record.get("result", ""))
-            test_status = self._map_result(result_str)
-            test_name = self._extract_test_name_from_job(job_name)
+        return (True, [result])
 
-            duration = self._calculate_job_duration(record)
-
-            result = TestResult(
-                provider="azure",
-                scanner="",
-                test_name=test_name,
-                status=test_status,
-                duration=duration,
-                run_url=web_url,
-            )
-            results.append(result)
-
-        return (True, results)
-
-    def _extract_test_name_from_job(self, job_name: str) -> str:
-        """Extract test name and scan path from job name.
-
-        Azure formats matrix jobs as: Run scanner (matrix_identifier)
-        Where matrix_identifier includes all matrix variables.
-        """
-        parts = job_name.split("(")
-        if len(parts) > 1:
-            matrix_info = parts[1].rstrip(")").strip()
-            return matrix_info if matrix_info else "unknown"  # pragma: no cover
-        return "unknown"  # pragma: no cover
-
-    def _calculate_job_duration(self, record: Mapping[str, object]) -> float:
-        """Calculate job duration from timestamps."""
+    def _calculate_run_duration(self, run_data: Mapping[str, object]) -> float:
+        """Calculate pipeline run duration from timestamps."""
         from datetime import datetime
 
-        start_time = record.get("startTime")
-        finish_time = record.get("finishTime")
+        created_date = run_data.get("createdDate")
+        finished_date = run_data.get("finishedDate")
 
-        if not isinstance(start_time, str) or not isinstance(
-            finish_time, str
-        ):  # pragma: no cover
+        if not isinstance(created_date, str) or not isinstance(finished_date, str):
             return 0.0
 
         try:
-            start = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-            finish = datetime.fromisoformat(finish_time.replace("Z", "+00:00"))
-            duration = (finish - start).total_seconds()
+            created = datetime.fromisoformat(created_date.replace("Z", "+00:00"))
+            finished = datetime.fromisoformat(finished_date.replace("Z", "+00:00"))
+            duration = (finished - created).total_seconds()
             return max(0.0, duration)
-        except (ValueError, AttributeError):  # pragma: no cover
+        except (ValueError, AttributeError):
             return 0.0
 
     def _map_result(
