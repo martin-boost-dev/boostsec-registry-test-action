@@ -69,15 +69,11 @@ class GitHubProvider(PipelineProvider):
         return run_id
 
     async def poll_status(self, run_id: str) -> tuple[bool, list[TestResult]]:
-        """Check if all matrix jobs are complete and get results."""
+        """Check if workflow run is complete and get aggregated result."""
         async with aiohttp.ClientSession() as session:
             run_url = (
                 f"{self.base_url}/repos/{self.config.owner}/{self.config.repo}/"
                 f"actions/runs/{run_id}"
-            )
-            jobs_url = (
-                f"{self.base_url}/repos/{self.config.owner}/{self.config.repo}/"
-                f"actions/runs/{run_id}/jobs"
             )
             headers = {
                 "Authorization": f"Bearer {self.config.token}",
@@ -92,14 +88,6 @@ class GitHubProvider(PipelineProvider):
                     )
                 run_data: Mapping[str, object] = await response.json()
 
-            async with session.get(jobs_url, headers=headers) as response:
-                if response.status != 200:  # pragma: no cover
-                    text = await response.text()
-                    raise RuntimeError(
-                        f"Failed to get workflow jobs: {response.status} {text}"
-                    )
-                jobs_data: Mapping[str, object] = await response.json()
-
         status_str = run_data.get("status")
         html_url = str(run_data.get("html_url", ""))
 
@@ -108,49 +96,45 @@ class GitHubProvider(PipelineProvider):
         if not is_complete:
             return (False, [])
 
-        jobs = jobs_data.get("jobs", [])
-        if not isinstance(jobs, list):  # pragma: no cover
-            return (True, [])
+        # Calculate overall duration from workflow run timestamps
+        duration = self._calculate_run_duration(run_data)
 
-        results = self._extract_test_results(jobs, html_url)
-        return (True, results)
+        # Map workflow conclusion to test status
+        conclusion = str(run_data.get("conclusion", ""))
+        test_status = self._map_conclusion(conclusion)
 
-    def _extract_test_results(
-        self, jobs: list[object], html_url: str
-    ) -> list[TestResult]:
-        """Extract test results from workflow jobs."""
-        results: list[TestResult] = []
-        for job in jobs:
-            if not isinstance(job, dict):  # pragma: no cover
-                continue
+        # Get workflow name for test identification
+        workflow_name = str(run_data.get("name", ""))
 
-            job_name = str(job.get("name", ""))
+        # Return single aggregated result for the entire workflow run
+        result = TestResult(
+            provider="github",
+            scanner="",
+            test_name=workflow_name,
+            status=test_status,
+            duration=duration,
+            run_url=html_url,
+        )
 
-            # Filter out non-test jobs (e.g., prepare-matrix)
-            # Test jobs have format: "{test_name} [{scan_path}]"
-            if not self._is_test_job(job_name):  # pragma: no cover
-                continue
+        return (True, [result])
 
-            duration = self._calculate_job_duration(job)
-            conclusion = str(job.get("conclusion", ""))
-            test_status = self._map_conclusion(conclusion)
+    def _calculate_run_duration(self, run_data: Mapping[str, object]) -> float:
+        """Calculate workflow run duration from timestamps."""
+        from datetime import datetime
 
-            # Job name is already in format "{test_name} [{scan_path}]"
-            result = TestResult(
-                provider="github",
-                scanner="",
-                test_name=job_name,
-                status=test_status,
-                duration=duration,
-                run_url=html_url,
-            )
-            results.append(result)
+        created_at = run_data.get("created_at")
+        updated_at = run_data.get("updated_at")
 
-        return results
+        if not isinstance(created_at, str) or not isinstance(updated_at, str):
+            return 0.0
 
-    def _is_test_job(self, job_name: str) -> bool:
-        """Check if a job name represents a test job."""
-        return "[" in job_name and "]" in job_name
+        try:
+            created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            updated = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+            duration = (updated - created).total_seconds()
+            return max(0.0, duration)
+        except (ValueError, AttributeError):
+            return 0.0
 
     async def _find_workflow_run(self, dispatch_time: float, scanner_id: str) -> str:
         """Find the workflow run that was just dispatched."""
@@ -232,24 +216,6 @@ class GitHubProvider(PipelineProvider):
                     return str(run_id)
 
         return None
-
-    def _calculate_job_duration(self, job: Mapping[str, object]) -> float:
-        """Calculate job duration from timestamps."""
-        from datetime import datetime
-
-        started_at = job.get("started_at")
-        completed_at = job.get("completed_at")
-
-        if not isinstance(started_at, str) or not isinstance(completed_at, str):
-            return 0.0
-
-        try:
-            started = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
-            completed = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
-            duration = (completed - started).total_seconds()
-            return max(0.0, duration)
-        except (ValueError, AttributeError):
-            return 0.0
 
     def _map_conclusion(
         self, conclusion: str

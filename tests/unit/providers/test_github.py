@@ -189,7 +189,7 @@ async def test_poll_status_in_progress(github_config: GitHubConfig) -> None:
 
 
 async def test_poll_status_completed_success(github_config: GitHubConfig) -> None:
-    """poll_status returns complete with success status."""
+    """poll_status returns complete with aggregated success status."""
     provider = GitHubProvider(github_config)
 
     with aioresponses() as m:
@@ -199,23 +199,10 @@ async def test_poll_status_completed_success(github_config: GitHubConfig) -> Non
             payload={
                 "status": "completed",
                 "conclusion": "success",
+                "name": "Test Scanner",
                 "html_url": "https://github.com/owner/repo/actions/runs/123",
                 "created_at": "2099-01-01T12:00:00Z",
                 "updated_at": "2099-01-01T12:01:30Z",
-            },
-        )
-        m.get(
-            f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
-            "actions/runs/123456/jobs",
-            payload={
-                "jobs": [
-                    {
-                        "name": "smoke test [.]",
-                        "conclusion": "success",
-                        "started_at": "2099-01-01T12:00:00Z",
-                        "completed_at": "2099-01-01T12:01:30Z",
-                    }
-                ]
             },
         )
 
@@ -225,12 +212,12 @@ async def test_poll_status_completed_success(github_config: GitHubConfig) -> Non
     assert len(results) == 1
     assert results[0].status == "success"
     assert results[0].provider == "github"
-    assert results[0].test_name == "smoke test [.]"
+    assert results[0].test_name == "Test Scanner"
     assert results[0].duration == 90.0
 
 
 async def test_poll_status_completed_failure(github_config: GitHubConfig) -> None:
-    """poll_status returns complete with failure status."""
+    """poll_status returns complete with aggregated failure status."""
     provider = GitHubProvider(github_config)
 
     with aioresponses() as m:
@@ -240,23 +227,10 @@ async def test_poll_status_completed_failure(github_config: GitHubConfig) -> Non
             payload={
                 "status": "completed",
                 "conclusion": "failure",
+                "name": "Test Scanner",
                 "html_url": "https://github.com/owner/repo/actions/runs/123",
                 "created_at": "2099-01-01T12:00:00Z",
                 "updated_at": "2099-01-01T12:05:45Z",
-            },
-        )
-        m.get(
-            f"https://api.github.com/repos/{github_config.owner}/{github_config.repo}/"
-            "actions/runs/123456/jobs",
-            payload={
-                "jobs": [
-                    {
-                        "name": "smoke test [.]",
-                        "conclusion": "failure",
-                        "started_at": "2099-01-01T12:00:00Z",
-                        "completed_at": "2099-01-01T12:05:45Z",
-                    }
-                ]
             },
         )
 
@@ -265,7 +239,7 @@ async def test_poll_status_completed_failure(github_config: GitHubConfig) -> Non
     assert is_complete is True
     assert len(results) == 1
     assert results[0].status == "failure"
-    assert results[0].test_name == "smoke test [.]"
+    assert results[0].test_name == "Test Scanner"
     assert results[0].duration == 345.0
 
 
@@ -300,67 +274,66 @@ async def test_map_conclusion_all_statuses(github_config: GitHubConfig) -> None:
     assert provider._map_conclusion("unknown") == "error"
 
 
-async def test_calculate_job_duration_success(github_config: GitHubConfig) -> None:
-    """_calculate_job_duration computes duration from timestamps."""
+async def test_calculate_run_duration_success(github_config: GitHubConfig) -> None:
+    """_calculate_run_duration computes duration from timestamps."""
     provider = GitHubProvider(github_config)
 
     data = {
-        "started_at": "2099-01-01T12:00:00Z",
-        "completed_at": "2099-01-01T12:05:30Z",
+        "created_at": "2099-01-01T12:00:00Z",
+        "updated_at": "2099-01-01T12:05:30Z",
     }
 
-    duration = provider._calculate_job_duration(data)
+    duration = provider._calculate_run_duration(data)
     assert duration == 330.0  # 5 minutes 30 seconds
 
 
-async def test_calculate_job_duration_missing_timestamps(
+async def test_calculate_run_duration_missing_timestamps(
     github_config: GitHubConfig,
 ) -> None:
-    """_calculate_job_duration returns 0.0 when timestamps are missing."""
+    """_calculate_run_duration returns 0.0 when timestamps are missing."""
     provider = GitHubProvider(github_config)
 
     # Missing both
-    assert provider._calculate_job_duration({}) == 0.0
+    assert provider._calculate_run_duration({}) == 0.0
 
-    # Missing completed_at
+    # Missing updated_at
     assert (
-        provider._calculate_job_duration({"started_at": "2099-01-01T12:00:00Z"}) == 0.0
+        provider._calculate_run_duration({"created_at": "2099-01-01T12:00:00Z"}) == 0.0
     )
 
-    # Missing started_at
+    # Missing created_at
     assert (
-        provider._calculate_job_duration({"completed_at": "2099-01-01T12:00:00Z"})
-        == 0.0
+        provider._calculate_run_duration({"updated_at": "2099-01-01T12:00:00Z"}) == 0.0
     )
 
 
-async def test_calculate_job_duration_invalid_format(
+async def test_calculate_run_duration_invalid_format(
     github_config: GitHubConfig,
 ) -> None:
-    """_calculate_job_duration returns 0.0 when timestamp format is invalid."""
+    """_calculate_run_duration returns 0.0 when timestamp format is invalid."""
     provider = GitHubProvider(github_config)
 
     data = {
-        "started_at": "invalid-date",
-        "completed_at": "2099-01-01T12:00:00Z",
+        "created_at": "invalid-date",
+        "updated_at": "2099-01-01T12:00:00Z",
     }
 
-    duration = provider._calculate_job_duration(data)
+    duration = provider._calculate_run_duration(data)
     assert duration == 0.0
 
 
-async def test_calculate_job_duration_non_string_timestamps(
+async def test_calculate_run_duration_non_string_timestamps(
     github_config: GitHubConfig,
 ) -> None:
-    """_calculate_job_duration returns 0.0 when timestamps are not strings."""
+    """_calculate_run_duration returns 0.0 when timestamps are not strings."""
     provider = GitHubProvider(github_config)
 
     data = {
-        "started_at": 123456,  # Not a string
-        "completed_at": "2099-01-01T12:00:00Z",
+        "created_at": 123456,  # Not a string
+        "updated_at": "2099-01-01T12:00:00Z",
     }
 
-    duration = provider._calculate_job_duration(data)
+    duration = provider._calculate_run_duration(data)
     assert duration == 0.0
 
 
