@@ -59,7 +59,7 @@ tests:
       url: "https://github.com/org/repo1.git"
       ref: "main"
   - name: "test2"
-    type: "docker-image"
+    type: "container-image"
     source:
       url: "https://github.com/org/repo2.git"
       ref: "v1.0"
@@ -170,7 +170,7 @@ tests:
 version: "1.0"
 tests:
   - name: "test2"
-    type: "docker-image"
+    type: "container-image"
     source:
       url: "https://github.com/org/repo.git"
       ref: "v1.0"

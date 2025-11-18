@@ -170,7 +170,9 @@ class AzureDevOpsProvider(PipelineProvider):
         start_time = record.get("startTime")
         finish_time = record.get("finishTime")
 
-        if not isinstance(start_time, str) or not isinstance(finish_time, str):  # pragma: no cover
+        if not isinstance(start_time, str) or not isinstance(
+            finish_time, str
+        ):  # pragma: no cover
             return 0.0
 
         try:

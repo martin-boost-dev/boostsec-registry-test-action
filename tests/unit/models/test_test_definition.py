@@ -53,14 +53,14 @@ def test_test_with_all_fields() -> None:
     """Test accepts all optional fields."""
     test = Test(
         name="comprehensive test",
-        type="docker-image",
+        type="container-image",
         source=TestSource(url="https://github.com/org/repo.git", ref="v1.0"),
         scan_paths=["/path1", "/path2"],
         scan_configs=[{"default": True}, {"rules": ["rule1"]}],
         timeout="10m",
     )
     assert test.name == "comprehensive test"
-    assert test.type == "docker-image"
+    assert test.type == "container-image"
     assert test.scan_paths == ["/path1", "/path2"]
     assert test.scan_configs == [{"default": True}, {"rules": ["rule1"]}]
     assert test.timeout == "10m"
@@ -94,7 +94,7 @@ def test_test_definition_with_tests() -> None:
         ),
         Test(
             name="test2",
-            type="docker-image",
+            type="container-image",
             source=TestSource(url="https://github.com/org/repo2.git", ref="v1.0"),
         ),
     ]

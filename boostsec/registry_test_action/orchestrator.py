@@ -165,7 +165,8 @@ class TestOrchestrator:
         """Run all tests for a scanner and wait for completion."""
         matrix_entries = test_definition.to_matrix_entries()
         logger.info(
-            f"Dispatching scanner tests: {scanner_id} ({len(matrix_entries)} matrix jobs)"
+            f"Dispatching scanner tests: {scanner_id} "
+            f"({len(matrix_entries)} matrix jobs)"
         )
 
         run_id = await self.provider.dispatch_scanner_tests(

@@ -160,7 +160,7 @@ async def test_run_tests_multiple_scanners_multiple_tests(
     )
     test2 = Test(
         name="test2",
-        type="docker-image",
+        type="container-image",
         source=TestSource(url="https://github.com/test/repo2.git", ref="main"),
         scan_paths=["."],
     )

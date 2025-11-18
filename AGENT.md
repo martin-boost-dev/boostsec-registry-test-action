@@ -19,7 +19,7 @@ This document provides detailed implementation guidance for building the scanner
 
 2. **Test** (test_definition.py)
    - `name`: str - Test name
-   - `type`: Literal["source-code", "docker-image"] - Test type
+   - `type`: Literal["source-code", "container-image"] - Test type
    - `source`: TestSource - Source repository details
    - `scan_paths`: list[str] - Paths to scan
    - `scan_configs`: list[dict] | None - Optional scan configurations

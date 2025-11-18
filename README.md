@@ -62,7 +62,7 @@ tests:
       - "."
 
   - name: "Smoke test - docker image"
-    type: "docker-image"
+    type: "container-image"
     source:
       url: "https://github.com/vulnerables/web-dvwa.git"
       ref: "v1.9"

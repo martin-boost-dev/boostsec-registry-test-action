@@ -155,7 +155,9 @@ class GitLabProvider(PipelineProvider):
         started_at = job.get("started_at")
         finished_at = job.get("finished_at")
 
-        if not isinstance(started_at, str) or not isinstance(finished_at, str):  # pragma: no cover
+        if not isinstance(started_at, str) or not isinstance(
+            finished_at, str
+        ):  # pragma: no cover
             return 0.0
 
         try:

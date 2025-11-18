@@ -20,7 +20,7 @@ class Test(BaseModel):
     __test__ = False
 
     name: str = Field(..., description="Human-readable test name")
-    type: Literal["source-code", "docker-image"] = Field(
+    type: Literal["source-code", "container-image"] = Field(
         ..., description="Type of test to execute"
     )
     source: TestSource = Field(..., description="Source repository details")
@@ -34,7 +34,7 @@ class Test(BaseModel):
     timeout: str = Field(default="5m", description="Test timeout (e.g., '300s', '5m')")
 
     @model_validator(mode="after")
-    def default_scan_paths_to_root(self) -> "Test":
+    def default_scan_paths_to_root(self) -> "Test":  # noqa: N804
         """Set scan paths to repository root if empty."""
         if not self.scan_paths:
             self.scan_paths = ["."]
@@ -47,7 +47,7 @@ class MatrixEntry(BaseModel):
     __test__ = False
 
     test_name: str = Field(..., description="Test name")
-    test_type: Literal["source-code", "docker-image"] = Field(
+    test_type: Literal["source-code", "container-image"] = Field(
         ..., description="Type of test"
     )
     source_url: str = Field(..., description="Git repository URL")

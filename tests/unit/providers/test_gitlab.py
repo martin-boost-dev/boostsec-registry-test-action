@@ -44,7 +44,7 @@ def test_definition() -> TestDefinition:
 async def test_dispatch_scanner_tests_success(
     gitlab_config: GitLabConfig, test_definition: TestDefinition
 ) -> None:
-    """dispatch_scanner_tests successfully creates pipeline using project access token."""
+    """dispatch_scanner_tests successfully creates pipeline."""
     provider = GitLabProvider(gitlab_config)
 
     with aioresponses() as m:

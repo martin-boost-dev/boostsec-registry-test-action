@@ -322,13 +322,20 @@ async def test_calculate_job_duration_missing_timestamps(
     assert provider._calculate_job_duration({}) == 0.0
 
     # Missing completed_at
-    assert provider._calculate_job_duration({"started_at": "2099-01-01T12:00:00Z"}) == 0.0
+    assert (
+        provider._calculate_job_duration({"started_at": "2099-01-01T12:00:00Z"}) == 0.0
+    )
 
     # Missing started_at
-    assert provider._calculate_job_duration({"completed_at": "2099-01-01T12:00:00Z"}) == 0.0
+    assert (
+        provider._calculate_job_duration({"completed_at": "2099-01-01T12:00:00Z"})
+        == 0.0
+    )
 
 
-async def test_calculate_job_duration_invalid_format(github_config: GitHubConfig) -> None:
+async def test_calculate_job_duration_invalid_format(
+    github_config: GitHubConfig,
+) -> None:
     """_calculate_job_duration returns 0.0 when timestamp format is invalid."""
     provider = GitHubProvider(github_config)
 
@@ -438,15 +445,21 @@ async def test_find_matching_run_skips_invalid_runs(
 
 
 async def test_extract_test_name_with_full_matrix(github_config: GitHubConfig) -> None:
-    """_extract_test_name_from_job extracts test name and scan path from full matrix format."""
+    """Extract test name and scan path from full matrix format."""
     provider = GitHubProvider(github_config)
 
     # Full matrix format with all fields
-    job_name = "run-tests (smoke test, source-code, https://github.com/OWASP/NodeGoat.git, main, src/app, 300s)"
+    job_name = (
+        "run-tests (smoke test, source-code, "
+        "https://github.com/OWASP/NodeGoat.git, main, src/app, 300s)"
+    )
     result = provider._extract_test_name_from_job(job_name)
     assert result == "smoke test [src/app]"
 
     # Another test with different scan path
-    job_name2 = "run-tests (integration test, docker-image, https://github.com/test/repo.git, develop, ., 600s)"
+    job_name2 = (
+        "run-tests (integration test, container-image, "
+        "https://github.com/test/repo.git, develop, ., 600s)"
+    )
     result2 = provider._extract_test_name_from_job(job_name2)
     assert result2 == "integration test [.]"
