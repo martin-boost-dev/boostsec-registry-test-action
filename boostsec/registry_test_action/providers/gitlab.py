@@ -68,15 +68,11 @@ class GitLabProvider(PipelineProvider):
         return str(pipeline_id)
 
     async def poll_status(self, run_id: str) -> tuple[bool, list[TestResult]]:
-        """Check if all pipeline jobs are complete and get results."""
+        """Check if pipeline is complete and get aggregated result."""
         async with aiohttp.ClientSession() as session:
             pipeline_url = (
                 f"{self.base_url}/projects/{self._encoded_project_id}/"
                 f"pipelines/{run_id}"
-            )
-            jobs_url = (
-                f"{self.base_url}/projects/{self._encoded_project_id}/"
-                f"pipelines/{run_id}/jobs"
             )
             headers = {
                 "PRIVATE-TOKEN": self.config.token,
@@ -89,14 +85,6 @@ class GitLabProvider(PipelineProvider):
                         f"Failed to get pipeline: {response.status} {text}"
                     )
                 pipeline_data: Mapping[str, object] = await response.json()
-
-            async with session.get(jobs_url, headers=headers) as response:
-                if response.status != 200:  # pragma: no cover
-                    text = await response.text()
-                    raise RuntimeError(
-                        f"Failed to get pipeline jobs: {response.status} {text}"
-                    )
-                jobs_data: list[object] = await response.json()
 
         status_str = pipeline_data.get("status")
         web_url = str(pipeline_data.get("web_url", ""))
@@ -112,60 +100,43 @@ class GitLabProvider(PipelineProvider):
         if not is_complete:
             return (False, [])
 
-        results: list[TestResult] = []
-        for job in jobs_data:
-            if not isinstance(job, dict):  # pragma: no cover
-                continue
+        # Get overall pipeline status and duration
+        test_status = self._map_status(str(status_str))
+        duration = self._calculate_pipeline_duration(pipeline_data)
 
-            job_name = str(job.get("name", ""))
-            if not job_name.startswith("run-test-"):  # pragma: no cover
-                continue
+        # Get pipeline reference/name
+        pipeline_ref = str(pipeline_data.get("ref", ""))
 
-            job_status = str(job.get("status", ""))
-            test_status = self._map_status(job_status)
-            test_name = self._extract_test_name_from_job(job_name)
+        # Return single aggregated result for the entire pipeline
+        result = TestResult(
+            provider="gitlab",
+            scanner="",
+            test_name=pipeline_ref,
+            status=test_status,
+            duration=duration,
+            run_url=web_url,
+        )
 
-            duration = self._calculate_job_duration(job)
+        return (True, [result])
 
-            result = TestResult(
-                provider="gitlab",
-                scanner="",
-                test_name=test_name,
-                status=test_status,
-                duration=duration,
-                run_url=web_url,
-            )
-            results.append(result)
-
-        return (True, results)
-
-    def _extract_test_name_from_job(self, job_name: str) -> str:
-        """Extract test name and scan path from job name.
-
-        Job names are formatted as: run-test-{test_name}-{scan_path}
-        with special chars replaced by hyphens.
-        """
-        cleaned = job_name.replace("run-test-", "", 1)
-        return cleaned if cleaned else "unknown"  # pragma: no cover
-
-    def _calculate_job_duration(self, job: Mapping[str, object]) -> float:
-        """Calculate job duration from timestamps."""
+    def _calculate_pipeline_duration(
+        self, pipeline_data: Mapping[str, object]
+    ) -> float:
+        """Calculate pipeline duration from timestamps."""
         from datetime import datetime
 
-        started_at = job.get("started_at")
-        finished_at = job.get("finished_at")
+        created_at = pipeline_data.get("created_at")
+        updated_at = pipeline_data.get("updated_at")
 
-        if not isinstance(started_at, str) or not isinstance(
-            finished_at, str
-        ):  # pragma: no cover
+        if not isinstance(created_at, str) or not isinstance(updated_at, str):
             return 0.0
 
         try:
-            started = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
-            finished = datetime.fromisoformat(finished_at.replace("Z", "+00:00"))
-            duration = (finished - started).total_seconds()
+            created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            updated = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+            duration = (updated - created).total_seconds()
             return max(0.0, duration)
-        except (ValueError, AttributeError):  # pragma: no cover
+        except (ValueError, AttributeError):
             return 0.0
 
     def _map_status(

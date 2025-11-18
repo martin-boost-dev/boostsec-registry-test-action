@@ -160,11 +160,6 @@ async def test_poll_status_running(gitlab_config: GitLabConfig) -> None:
                 "web_url": "https://gitlab.com/project/pipelines/789",
             },
         )
-        m.get(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
-            "pipelines/789/jobs",
-            payload=[],
-        )
 
         is_complete, results = await provider.poll_status("789")
 
@@ -173,7 +168,7 @@ async def test_poll_status_running(gitlab_config: GitLabConfig) -> None:
 
 
 async def test_poll_status_completed_success(gitlab_config: GitLabConfig) -> None:
-    """poll_status returns complete with success status."""
+    """poll_status returns complete with aggregated success status."""
     provider = GitLabProvider(gitlab_config)
 
     with aioresponses() as m:
@@ -182,20 +177,11 @@ async def test_poll_status_completed_success(gitlab_config: GitLabConfig) -> Non
             "pipelines/789",
             payload={
                 "status": "success",
+                "ref": "main",
                 "web_url": "https://gitlab.com/project/pipelines/789",
+                "created_at": "2099-01-01T12:00:00Z",
+                "updated_at": "2099-01-01T12:01:30Z",
             },
-        )
-        m.get(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
-            "pipelines/789/jobs",
-            payload=[
-                {
-                    "name": "run-test-smoke-test",
-                    "status": "success",
-                    "started_at": "2099-01-01T12:00:00Z",
-                    "finished_at": "2099-01-01T12:01:30Z",
-                }
-            ],
         )
 
         is_complete, results = await provider.poll_status("789")
@@ -204,11 +190,12 @@ async def test_poll_status_completed_success(gitlab_config: GitLabConfig) -> Non
     assert len(results) == 1
     assert results[0].status == "success"
     assert results[0].provider == "gitlab"
-    assert results[0].test_name == "smoke-test"
+    assert results[0].test_name == "main"
+    assert results[0].duration == 90.0
 
 
 async def test_poll_status_completed_failure(gitlab_config: GitLabConfig) -> None:
-    """poll_status returns complete with failure status."""
+    """poll_status returns complete with aggregated failure status."""
     provider = GitLabProvider(gitlab_config)
 
     with aioresponses() as m:
@@ -217,20 +204,11 @@ async def test_poll_status_completed_failure(gitlab_config: GitLabConfig) -> Non
             "pipelines/789",
             payload={
                 "status": "failed",
+                "ref": "main",
                 "web_url": "https://gitlab.com/project/pipelines/789",
+                "created_at": "2099-01-01T12:00:00Z",
+                "updated_at": "2099-01-01T12:05:45Z",
             },
-        )
-        m.get(
-            f"https://gitlab.com/api/v4/projects/{gitlab_config.project_id}/"
-            "pipelines/789/jobs",
-            payload=[
-                {
-                    "name": "run-test-smoke-test",
-                    "status": "failed",
-                    "started_at": "2099-01-01T12:00:00Z",
-                    "finished_at": "2099-01-01T12:01:30Z",
-                }
-            ],
         )
 
         is_complete, results = await provider.poll_status("789")
@@ -238,7 +216,8 @@ async def test_poll_status_completed_failure(gitlab_config: GitLabConfig) -> Non
     assert is_complete is True
     assert len(results) == 1
     assert results[0].status == "failure"
-    assert results[0].test_name == "smoke-test"
+    assert results[0].test_name == "main"
+    assert results[0].duration == 345.0
 
 
 async def test_poll_status_api_error(gitlab_config: GitLabConfig) -> None:
@@ -300,3 +279,70 @@ async def test_dispatch_scanner_tests_with_project_path(
         )
 
     assert pipeline_id == "789"
+
+
+async def test_calculate_pipeline_duration_success(
+    gitlab_config: GitLabConfig,
+) -> None:
+    """_calculate_pipeline_duration computes duration from timestamps."""
+    provider = GitLabProvider(gitlab_config)
+
+    data = {
+        "created_at": "2099-01-01T12:00:00Z",
+        "updated_at": "2099-01-01T12:05:30Z",
+    }
+
+    duration = provider._calculate_pipeline_duration(data)
+    assert duration == 330.0  # 5 minutes 30 seconds
+
+
+async def test_calculate_pipeline_duration_missing_timestamps(
+    gitlab_config: GitLabConfig,
+) -> None:
+    """_calculate_pipeline_duration returns 0.0 when timestamps are missing."""
+    provider = GitLabProvider(gitlab_config)
+
+    # Missing both
+    assert provider._calculate_pipeline_duration({}) == 0.0
+
+    # Missing updated_at
+    assert (
+        provider._calculate_pipeline_duration({"created_at": "2099-01-01T12:00:00Z"})
+        == 0.0
+    )
+
+    # Missing created_at
+    assert (
+        provider._calculate_pipeline_duration({"updated_at": "2099-01-01T12:00:00Z"})
+        == 0.0
+    )
+
+
+async def test_calculate_pipeline_duration_invalid_format(
+    gitlab_config: GitLabConfig,
+) -> None:
+    """_calculate_pipeline_duration returns 0.0 when timestamp format is invalid."""
+    provider = GitLabProvider(gitlab_config)
+
+    data = {
+        "created_at": "invalid-date",
+        "updated_at": "2099-01-01T12:00:00Z",
+    }
+
+    duration = provider._calculate_pipeline_duration(data)
+    assert duration == 0.0
+
+
+async def test_calculate_pipeline_duration_non_string_timestamps(
+    gitlab_config: GitLabConfig,
+) -> None:
+    """_calculate_pipeline_duration returns 0.0 when timestamps are not strings."""
+    provider = GitLabProvider(gitlab_config)
+
+    data = {
+        "created_at": 123456,  # Not a string
+        "updated_at": "2099-01-01T12:00:00Z",
+    }
+
+    duration = provider._calculate_pipeline_duration(data)
+    assert duration == 0.0
