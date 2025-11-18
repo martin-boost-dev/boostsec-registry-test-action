@@ -195,7 +195,7 @@ async def test_poll_status_in_progress(azure_config: AzureDevOpsConfig) -> None:
 
 
 async def test_poll_status_completed_success(azure_config: AzureDevOpsConfig) -> None:
-    """poll_status returns complete with success status."""
+    """poll_status returns complete with aggregated success status."""
     provider = AzureDevOpsProvider(azure_config)
 
     with aioresponses() as m:
@@ -206,24 +206,12 @@ async def test_poll_status_completed_success(azure_config: AzureDevOpsConfig) ->
             payload={
                 "state": "completed",
                 "result": "succeeded",
+                "name": "Scanner Pipeline",
+                "createdDate": "2099-01-01T12:00:00Z",
+                "finishedDate": "2099-01-01T12:01:30Z",
                 "_links": {
                     "web": {"href": "https://dev.azure.com/test-org/pipelines/999"}
                 },
-            },
-        )
-        m.get(
-            f"https://dev.azure.com/{azure_config.organization}/"
-            f"{azure_config.project}/_apis/build/builds/999/timeline?api-version=7.1",
-            payload={
-                "records": [
-                    {
-                        "name": "Run scanner (smoke test)",
-                        "type": "Job",
-                        "result": "succeeded",
-                        "startTime": "2099-01-01T12:00:00Z",
-                        "finishTime": "2099-01-01T12:01:30Z",
-                    }
-                ]
             },
         )
 
@@ -233,11 +221,12 @@ async def test_poll_status_completed_success(azure_config: AzureDevOpsConfig) ->
     assert len(results) == 1
     assert results[0].status == "success"
     assert results[0].provider == "azure"
-    assert results[0].test_name == "smoke test"
+    assert results[0].test_name == "Scanner Pipeline"
+    assert results[0].duration == 90.0
 
 
 async def test_poll_status_completed_failure(azure_config: AzureDevOpsConfig) -> None:
-    """poll_status returns complete with failure status."""
+    """poll_status returns complete with aggregated failure status."""
     provider = AzureDevOpsProvider(azure_config)
 
     with aioresponses() as m:
@@ -248,24 +237,12 @@ async def test_poll_status_completed_failure(azure_config: AzureDevOpsConfig) ->
             payload={
                 "state": "completed",
                 "result": "failed",
+                "name": "Scanner Pipeline",
+                "createdDate": "2099-01-01T12:00:00Z",
+                "finishedDate": "2099-01-01T12:05:45Z",
                 "_links": {
                     "web": {"href": "https://dev.azure.com/test-org/pipelines/999"}
                 },
-            },
-        )
-        m.get(
-            f"https://dev.azure.com/{azure_config.organization}/"
-            f"{azure_config.project}/_apis/build/builds/999/timeline?api-version=7.1",
-            payload={
-                "records": [
-                    {
-                        "name": "Run scanner (smoke test)",
-                        "type": "Job",
-                        "result": "failed",
-                        "startTime": "2099-01-01T12:00:00Z",
-                        "finishTime": "2099-01-01T12:01:30Z",
-                    }
-                ]
             },
         )
 
@@ -274,6 +251,8 @@ async def test_poll_status_completed_failure(azure_config: AzureDevOpsConfig) ->
     assert is_complete is True
     assert len(results) == 1
     assert results[0].status == "failure"
+    assert results[0].test_name == "Scanner Pipeline"
+    assert results[0].duration == 345.0
 
 
 async def test_poll_status_api_error(azure_config: AzureDevOpsConfig) -> None:
@@ -316,18 +295,17 @@ async def test_poll_status_no_links(azure_config: AzureDevOpsConfig) -> None:
             payload={
                 "state": "completed",
                 "result": "succeeded",
+                "name": "Scanner Pipeline",
+                "createdDate": "2099-01-01T12:00:00Z",
+                "finishedDate": "2099-01-01T12:01:30Z",
             },
-        )
-        m.get(
-            f"https://dev.azure.com/{azure_config.organization}/"
-            f"{azure_config.project}/_apis/build/builds/999/timeline?api-version=7.1",
-            payload={"records": []},
         )
 
         is_complete, results = await provider.poll_status("999")
 
     assert is_complete is True
-    assert results == []
+    assert len(results) == 1
+    assert results[0].run_url == ""  # Empty when _links is missing
 
 
 async def test_poll_status_invalid_links(azure_config: AzureDevOpsConfig) -> None:
@@ -342,16 +320,79 @@ async def test_poll_status_invalid_links(azure_config: AzureDevOpsConfig) -> Non
             payload={
                 "state": "completed",
                 "result": "succeeded",
+                "name": "Scanner Pipeline",
+                "createdDate": "2099-01-01T12:00:00Z",
+                "finishedDate": "2099-01-01T12:01:30Z",
                 "_links": "invalid",
             },
-        )
-        m.get(
-            f"https://dev.azure.com/{azure_config.organization}/"
-            f"{azure_config.project}/_apis/build/builds/999/timeline?api-version=7.1",
-            payload={"records": []},
         )
 
         is_complete, results = await provider.poll_status("999")
 
     assert is_complete is True
-    assert results == []
+    assert len(results) == 1
+    assert results[0].run_url == ""  # Empty when _links is invalid
+
+
+async def test_calculate_run_duration_success(azure_config: AzureDevOpsConfig) -> None:
+    """_calculate_run_duration computes duration from timestamps."""
+    provider = AzureDevOpsProvider(azure_config)
+
+    data = {
+        "createdDate": "2099-01-01T12:00:00Z",
+        "finishedDate": "2099-01-01T12:05:30Z",
+    }
+
+    duration = provider._calculate_run_duration(data)
+    assert duration == 330.0  # 5 minutes 30 seconds
+
+
+async def test_calculate_run_duration_missing_timestamps(
+    azure_config: AzureDevOpsConfig,
+) -> None:
+    """_calculate_run_duration returns 0.0 when timestamps are missing."""
+    provider = AzureDevOpsProvider(azure_config)
+
+    # Missing both
+    assert provider._calculate_run_duration({}) == 0.0
+
+    # Missing finishedDate
+    assert (
+        provider._calculate_run_duration({"createdDate": "2099-01-01T12:00:00Z"}) == 0.0
+    )
+
+    # Missing createdDate
+    assert (
+        provider._calculate_run_duration({"finishedDate": "2099-01-01T12:00:00Z"})
+        == 0.0
+    )
+
+
+async def test_calculate_run_duration_invalid_format(
+    azure_config: AzureDevOpsConfig,
+) -> None:
+    """_calculate_run_duration returns 0.0 when timestamp format is invalid."""
+    provider = AzureDevOpsProvider(azure_config)
+
+    data = {
+        "createdDate": "invalid-date",
+        "finishedDate": "2099-01-01T12:00:00Z",
+    }
+
+    duration = provider._calculate_run_duration(data)
+    assert duration == 0.0
+
+
+async def test_calculate_run_duration_non_string_timestamps(
+    azure_config: AzureDevOpsConfig,
+) -> None:
+    """_calculate_run_duration returns 0.0 when timestamps are not strings."""
+    provider = AzureDevOpsProvider(azure_config)
+
+    data = {
+        "createdDate": 123456,  # Not a string
+        "finishedDate": "2099-01-01T12:00:00Z",
+    }
+
+    duration = provider._calculate_run_duration(data)
+    assert duration == 0.0
